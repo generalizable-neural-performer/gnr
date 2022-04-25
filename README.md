@@ -15,7 +15,7 @@ Abstract: *This work targets at using a general deep learning framework to synth
 
 ```
 @article{
-    author = {Wei, Cheng and Su, Xu and Jingtan, Piao and Wayane, Wu and Chen, Qian and Kwan-Yee, Lin and Hongsheng, Li},
+    author = {Wei, Cheng and Su, Xu and Jingtan, Piao and Wayne, Wu and Chen, Qian and Kwan-Yee, Lin and Hongsheng, Li},
     title = {Generalizable Neural Performer: Learning Robust Radiance Fields for Human Novel View Synthesis},
     publisher = {arXiv},
     year = {2022},
