@@ -1,4 +1,4 @@
-# Generalizable Neural Performer: Learning Robust Radiance Fields for Human Novel View Synthesis</sub>
+# Generalizable Neural Performer: Learning Robust Radiance Fields for Human Novel View Synthesis
 [![report](https://img.shields.io/badge/arxiv-report-red)]() 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
 
