@@ -1,7 +1,7 @@
 # GeneBody Dataset
 
 <!-- ![Teaser image](./genebody.gif#center) -->
-<p align="center"><img src="./genebody.gif"></p>
+<p align="center"><img src="./genebody.gif" width="90%"></p>
 <p align="center">Please check the <a href="https://generalizable-neural-performer.github.io/genebody.html">dataset webpage</a> for data preview</p>
 
 ## Overview
@@ -17,7 +17,7 @@ The GeneBody is available for non-commercial research purposes only.
 You agree not to reproduce, duplicate, copy, sell, trade, resell or exploit for any commercial purposes, any portion of the images and any portion of derived data.
 You agree not to further copy, publish or distribute any portion of the GeneBody. Except, for internal use at a single site within the same organization it is allowed to make copies of the dataset.
 
-The SenseTime Reasearch reserves the right to terminate your access to the GeneBody at any time.
+The SenseTime Reasearch and Shanghai AI Lab reserves the right to terminate your access to the GeneBody at any time.
 
 ## Download Instructions
 ### Test10
