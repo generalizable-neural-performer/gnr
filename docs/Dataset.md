@@ -24,7 +24,7 @@ The SenseTime Reasearch and Shanghai AI Lab reserves the right to terminate your
 You can download the *Test10* subset from Onedrive [link](https://hkustconnect-my.sharepoint.com/:f:/g/personal/wchengad_connect_ust_hk/EgWKPko5WXdClIg_zsjDSxwBH7LM4waKyJkWaslC-BVfSQ?e=JaDZdQ)
 
 ### Train40
-Please download the GeneBody dataset Release Agreement from [link](./GeneBody Dataset Release Agreement.pdf).
+Please download the GeneBody Dataset Release Agreement from [link](./GeneBody_Dataset_Release_Agreement.pdf).
 Read it carefully, complete and sign it appropriately. 
 
 Please send the completed form to Wei Cheng (wchengad(at)connect.ust.hk) and cc to Kwan-Yee Lin (linjunyi(at)sensetime.com) using institutional email address. The email Subject Title is "GeneBody Agreement". We will verify your request and contact you with the passwords to unzip the image data.
