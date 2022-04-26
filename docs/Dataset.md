@@ -1,6 +1,15 @@
 # GeneBody Dataset
 
-![Teaser image](./genebody.gif)
+<!-- ![Teaser image](./genebody.gif#center) -->
+<p align="center"><img src="./genebody.gif"></p>
+<p align="center">Please check the <a href="https://generalizable-neural-performer.github.io/genebody.html">dataset webpage</a> for data preview</p>
+
+## Overview
+GeneBody is a new dataset that
+we collected to evaluate the generalization and robustness of human novel view synthesis. It consists of over total *2.95M* frames of *100* subjects performing *370* sequences under *48* multi-view cameras capturing, with a variety of pose actions, in different types of body shapes, clothing, accessories and hairdos, ranging the geometry and appearance varies from everyday life to professional occasions.
+
+## Annotations
+GeneBody provides the per-view per-frame segmentation, using [BackgroundMatting-V2](https://github.com/PeterL1n/BackgroundMattingV2), and register the fitted [SMPLx](https://github.com/PeterL1n/BackgroundMattingV2) using our enhanced multi-view smplify repo in [here](). Annotation details can be found in the documentation [Annotation.md]()
 
 ## Agreement
 The GeneBody is available for non-commercial research purposes only. 
