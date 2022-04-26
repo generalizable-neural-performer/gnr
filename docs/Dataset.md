@@ -15,7 +15,7 @@ GeneBody provides the per-view per-frame segmentation, using [BackgroundMatting-
 The GeneBody is available for non-commercial research purposes only. 
 
 You agree not to reproduce, duplicate, copy, sell, trade, resell or exploit for any commercial purposes, any portion of the images and any portion of derived data.
-You agree not to further copy, publish or distribute any portion of the DeepFashion. Except, for internal use at a single site within the same organization it is allowed to make copies of the dataset.
+You agree not to further copy, publish or distribute any portion of the GeneBody. Except, for internal use at a single site within the same organization it is allowed to make copies of the dataset.
 
 The SenseTime Reasearch reserves the right to terminate your access to the GeneBody at any time.
 
