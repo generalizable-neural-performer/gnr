@@ -16,6 +16,13 @@ Wei Cheng, Su Xu, Jingtan Piao, Chen Qian, Wayne Wu, Kwan-Yee Lin, Hongsheng Li<
 - [26/04/2022] Techincal report released.
 - [24/04/2022] The codebase and project page are created.
 
+## Upcoming Events
+- [28/04/2022] SMPLx fitting toolbox and benchmark release.
+- [01/05/2022] GeneBody Train40 release.
+- [07/05/2022] Code and pretrain model release.
+- [01/06/2022] Extended370 release.
+
+
 ## Data Usage
 To download and use the GeneBody dataset set, please read the instructions in [Dataset.md](./docs/Dataset.md).
 
