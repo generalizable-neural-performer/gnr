@@ -26,6 +26,9 @@ Wei Cheng, Su Xu, Jingtan Piao, Chen Qian, Wayne Wu, Kwan-Yee Lin, Hongsheng Li<
 ## Data Usage
 To download and use the GeneBody dataset set, please read the instructions in [Dataset.md](./docs/Dataset.md).
 
+## Annotations
+GeneBody provides the per-view per-frame segmentation, using [BackgroundMatting-V2](https://github.com/PeterL1n/BackgroundMattingV2), and register the fitted [SMPLx](https://github.com/PeterL1n/BackgroundMattingV2) using our enhanced multi-view smplify repo in [here](https://github.com/generalizable-neural-performer/bodyfitting). Annotation details can be found in the documentation [Annotation.md]()
+
 ## Benchmarks
 We also provide benchmarks of start-of-the-art methods on GeneBody Dataset, methods and requirements are listed in [Benchmarks.md](./docs/Benchmarks.md).
 
