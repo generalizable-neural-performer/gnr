@@ -33,6 +33,12 @@ GeneBody provides the per-view per-frame segmentation, using [BackgroundMatting-
 ## Benchmarks
 We also provide benchmarks of start-of-the-art methods on GeneBody Dataset, methods and requirements are listed in [Benchmarks.md](https://github.com/generalizable-neural-performer/genebody-benchmarks).
 
+To test the performance of our released pretrained models, or train by yourselves, run:
+```
+git clone --recurse-submodules https://github.com/generalizable-neural-performer/gnr.git
+```
+And `cd benchmarks/`, the released benchmarks are ready to go on Genebody and other datasets such as V-sense and ZJU-Mocap.
+
 ### Case-specific Methods on Genebody
 | Model  | PSNR | SSIM |LPIPS| ckpts|
 | :--- | :---------------:|:---------------:| :---------------:| :---------------:  |
