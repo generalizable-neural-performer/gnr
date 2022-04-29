@@ -11,13 +11,14 @@ Wei Cheng, Su Xu, Jingtan Piao, Chen Qian, Wayne Wu, Kwan-Yee Lin, Hongsheng Li<
 
 ## Updates
 
+- [29/04/2022] SMPLx fitting toolbox and benchmark are released!
 - [26/04/2022] Code is coming soon!
 - [26/04/2022] Part of data released!
 - [26/04/2022] Techincal report released.
 - [24/04/2022] The codebase and project page are created.
 
 ## Upcoming Events
-- [28/04/2022] SMPLx fitting toolbox and benchmark release.
+
 - [01/05/2022] GeneBody Train40 release.
 - [07/05/2022] Code and pretrain model release.
 - [01/06/2022] Extended370 release.
@@ -30,7 +31,7 @@ To download and use the GeneBody dataset set, please read the instructions in [D
 GeneBody provides the per-view per-frame segmentation, using [BackgroundMatting-V2](https://github.com/PeterL1n/BackgroundMattingV2), and register the fitted [SMPLx](https://github.com/PeterL1n/BackgroundMattingV2) using our enhanced multi-view smplify repo in [here](https://github.com/generalizable-neural-performer/bodyfitting). Annotation details can be found in the documentation [Annotation.md]()
 
 ## Benchmarks
-We also provide benchmarks of start-of-the-art methods on GeneBody Dataset, methods and requirements are listed in [Benchmarks.md](./docs/Benchmarks.md).
+We also provide benchmarks of start-of-the-art methods on GeneBody Dataset, methods and requirements are listed in [Benchmarks.md](https://github.com/generalizable-neural-performer/genebody-benchmarks).
 
 ## Citation
 
