@@ -6,3 +6,19 @@
 	path = benchmarks/nv
 	url = https://github.com/generalizable-neural-performer/genebody-benchmarks/
 	branch = nv
+[submodule "benchmarks/nt"]
+	path = benchmarks/nt
+	url = https://github.com/generalizable-neural-performer/genebody-benchmarks/
+	branch = nt
+[submodule "benchmarks/nb"]
+	path = benchmarks/nb
+	url = https://github.com/generalizable-neural-performer/genebody-benchmarks/
+	branch = nb
+[submodule "benchmarks/anerf"]
+	path = benchmarks/anerf
+	url = https://github.com/generalizable-neural-performer/genebody-benchmarks/
+	branch = A-Nerf
+[submodule "benchmarks/nhr"]
+	path = benchmarks/nhr
+	url = https://github.com/generalizable-neural-performer/genebody-benchmarks/
+	branch = nhr
