@@ -1,0 +1,8 @@
+[submodule "benchmarks/ibrnet"]
+	path = benchmarks/ibrnet
+	url = https://github.com/generalizable-neural-performer/genebody-benchmarks/
+	branch = ibrnet
+[submodule "benchmarks/nv"]
+	path = benchmarks/nv
+	url = https://github.com/generalizable-neural-performer/genebody-benchmarks/
+	branch = nv
