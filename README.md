@@ -11,7 +11,7 @@ Wei Cheng, Su Xu, Jingtan Piao, Chen Qian, Wayne Wu, Kwan-Yee Lin, Hongsheng Li<
 
 ## Updates
 
-- [29/04/2022] SMPLx fitting toolbox and benchmark are released!
+- [29/04/2022] :new: SMPLx fitting toolbox and benchmark are released!
 - [26/04/2022] Code is coming soon!
 - [26/04/2022] Part of data released!
 - [26/04/2022] Techincal report released.
