@@ -11,7 +11,7 @@ Wei Cheng, Su Xu, Jingtan Piao, Chen Qian, Wayne Wu, Kwan-Yee Lin, Hongsheng Li<
 
 ## Updates
 
-- [29/04/2022] SMPLx fitting toolbox and benchmark are released! :boom:
+- [29/04/2022] SMPLx fitting toolbox and benchmarks are released! :boom:
 - [26/04/2022] Code is coming soon!
 - [26/04/2022] Part of data released!
 - [26/04/2022] Techincal report released.
@@ -58,10 +58,10 @@ And `cd benchmarks/`, the released benchmarks are ready to go on Genebody and ot
 ## Citation
 
 ```
-@article{
-    author = {Wei, Cheng and Su, Xu and Jingtan, Piao and Wayne, Wu and Chen, Qian and Kwan-Yee, Lin and Hongsheng, Li},
-    title = {Generalizable Neural Performer: Learning Robust Radiance Fields for Human Novel View Synthesis},
-    publisher = {arXiv},
-    year = {2022},
-  }
+@article{cheng2022generalizable,
+    title={Generalizable Neural Performer: Learning Robust Radiance Fields for Human Novel View Synthesis},
+    author={Cheng, Wei and Xu, Su and Piao, Jingtan and Qian, Chen and Wu, Wayne and Lin, Kwan-Yee and Li, Hongsheng},
+    journal={arXiv preprint arXiv:2204.11798},
+    year={2022}
+}
 ```
