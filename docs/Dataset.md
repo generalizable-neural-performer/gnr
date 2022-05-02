@@ -19,7 +19,7 @@ The SenseTime Reasearch and Shanghai AI Lab reserves the right to terminate your
 
 ## Download Instructions
 ### Test10
-You can download the *Test10* subset from Onedrive [link](https://hkustconnect-my.sharepoint.com/:f:/g/personal/wchengad_connect_ust_hk/EgWKPko5WXdClIg_zsjDSxwBH7LM4waKyJkWaslC-BVfSQ?e=JaDZdQ)
+You can download the *Test10* subset from Onedrive [link](https://hkustconnect-my.sharepoint.com/:f:/g/personal/wchengad_connect_ust_hk/Er9_MPspGvpKlrFbVnmwnbEBloYJN7z9D0rP4Ms8LUcYKA?e=lnjS0N)
 
 ### Train40
 Please download the GeneBody Dataset Release Agreement from [link](./GeneBody_Dataset_Release_Agreement.pdf).
@@ -27,7 +27,6 @@ Read it carefully, complete and sign it appropriately.
 
 Please send the completed form to Wei Cheng (wchengad(at)connect.ust.hk) and cc to Kwan-Yee Lin (linjunyi(at)sensetime.com) using institutional email address. The email Subject Title is "GeneBody Agreement". We will verify your request and contact you with the passwords to unzip the image data.
 
-Note: Train40 will be available at *no later than 2022.5.1*.
 ### Extended370
 
 Coming Soon (before 2022.6.1)
