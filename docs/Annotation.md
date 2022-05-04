@@ -3,8 +3,8 @@
 ## Data Capture
 GeneBody dataset captures performer in a motion capture studio with 48 synchronized cameras. Each actor is asked to perform 10 seconds clips recorded in a 15 fps rate. The camera location and capture volume is visualized in the following video.
 <!-- ![Teaser image](./genebody.gif#center) -->
-<p align="center"><img src="./capture_volume.gif" width="80%"></p>
-<!-- <p align="center">GeneBody captures performer in a synchronized 48 camera setting.</p> -->
+<p align="center"><img src="./capture_volume.gif" width="90%"></p>
+<p align="center">Left: Motion capture studio and performer, cameras are highlighted. Right: Video captured from camera 25.</p>
 
 
 ## Dataset Organization

@@ -19,7 +19,7 @@ Wei Cheng, Su Xu, Jingtan Piao, Chen Qian, Wayne Wu, Kwan-Yee Lin, Hongsheng Li<
 
 ## Upcoming Events
 
-- [08/05/2022] Code and pretrain model release.
+- [12/05/2022] Code and pretrain model release.
 - [01/06/2022] Extended370 release.
 
 
