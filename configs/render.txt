@@ -1,38 +1,29 @@
-# put your genebody root here
-dataroot = /mnt/lustre/share_data/chengwei/GeneBody
 name = genebody
 
-load_netG_checkpoint_path = ./checkpoints/net_G
-
-random_scale = False
-random_trans = False
-
-use_nml = True
-num_random_sh = 1
-
+# run phase
 train = False
 test = False
 render = True
 
+# Dataloader
 num_threads = 5
 output_mesh = True
-use_attention = True
 
-use_feat_sr = False
-dp_load_ddp = False
-weighted_pool = True
-use_sh = True
-use_bn = False
-use_vgg = False
-use_viewdirs = True
-
+# Geometric Body Shape Embedding
+smpl_type = smplx
 use_smpl_sdf = True
 use_t_pose = True
-use_skel_dist = False
-use_skel_dir = False
-use_smpl_betas = False
-regularization = False
+use_nml = True
 
+# SSOAB
+use_attention = True
+weighted_pool = True
+use_sh = True
+use_viewdirs = True
+use_occlusion = True
+use_smpl_depth = True
+
+# Ray Sampling
 use_vh = True
 N_rand = 1024
 N_rand_infer = 4096
@@ -40,18 +31,18 @@ N_samples = 256
 chunk = 524288
 vh_overhead = 1
 
+# Trianing
 ddp = False
 train_encoder = False
 projection_mode = perspective
-smpl_type = smplx
-use_occlusion = True
-use_smpl_depth = True
-eval_skip = 1
-train_skip = 1
 
+# Evaluation
+eval_skip = 1
+
+# Render
+move_cam = 150
+
+# Reconstruction
 N_grid = 512
 laplacian = 5
-move_cam = 150
-use_white_bkgd = False
-eval_dir = render
 

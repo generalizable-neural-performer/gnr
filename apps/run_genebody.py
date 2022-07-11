@@ -57,10 +57,8 @@ def prepare_data(opt, data, local_rank=0):
     if opt.train_shape:
         mesh_param['samples'] = data['samples'][0].to(device=local_rank)
         mesh_param['labels'] = data['labels'][0].to(device=local_rank)
-    if opt.use_anchor:
-        mesh_param['anchors'] = data['anchors'][0].to(device=local_rank)
 
-    if any([opt.use_smpl_sdf, opt.use_t_pose, opt.use_skel_dist, opt.use_skel_dir, opt.use_smpl_betas]):
+    if any([opt.use_smpl_sdf, opt.use_t_pose]):
         smpl = { 'rot': data['smpl_rot'].to(device=local_rank) }
         if opt.use_smpl_sdf or opt.use_t_pose:
             smpl['verts'] = data['smpl_verts'][0].to(device=local_rank)
@@ -68,10 +66,6 @@ def prepare_data(opt, data, local_rank=0):
         if opt.use_t_pose:
             smpl['t_verts'] = data['smpl_t_verts'][0].to(device=local_rank)
             smpl['t_faces'] = data['smpl_t_faces'][0].to(device=local_rank)
-        if opt.use_skel_dist or opt.use_skel_dir:
-            smpl['joints'] = data['smpl_joints'][0].to(device=local_rank)
-        if opt.use_smpl_betas:
-            smpl['betas'] = data['smpl_betas'][0].to(device=local_rank)
         if opt.use_smpl_depth:
             smpl['depth'] = data['smpl_depth'][0].to(device=local_rank)[:,None,...]
             
@@ -229,6 +223,7 @@ def train(opt, rank=0, local_rank = 0):
                 render_gt = test_data['render_gt'][0].to(local_rank)
                 
                 if opt.ddp:
+                    # distribute query views to different GPUs if multiple GPU or multiple machines are available
                     src_calibs, tar_calibs = torch.split(data['calibs'], [opt.num_views, data['calibs'].shape[0]-opt.num_views], 0)
                     total_len = len(tar_calibs)
                     sampler = ddpSampler(tar_calibs)
@@ -291,6 +286,7 @@ def train(opt, rank=0, local_rank = 0):
                 vid = test_data['vid'][0]
                 
                 if opt.ddp:
+                    # distribute query views to different GPUs if multiple GPU or multiple machines are available
                     src_calibs, tar_calibs = torch.split(data['calibs'], [opt.num_views, data['calibs'].shape[0]-opt.num_views], 0)
                     total_len = len(tar_calibs)
                     sampler = ddpSampler(tar_calibs)
@@ -302,7 +298,7 @@ def train(opt, rank=0, local_rank = 0):
                         tar_persps = tar_persps[indices]
                         data['persps'] = torch.cat([src_persps, tar_persps], 0)
 
-                target_dir = os.path.join(opt.basedir, opt.name, opt.eval_dir, name.split('_')[0])
+                target_dir = os.path.join(opt.basedir, opt.name, opt.render_dir, name.split('_')[0])
                 os.makedirs(target_dir, exist_ok=True)
                 rgbs, depths = net.module.render_path(data)
                 rgbs = sampler.distributed_concat(rgbs, total_len) if opt.ddp else rgbs

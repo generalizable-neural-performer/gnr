@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class SRFilters(nn.Module):
+    """
+    Upsample the pixel-aligned feature 
+    """
     def __init__(self, order=2, in_ch=256, out_ch=128):
         super(SRFilters, self).__init__()
         self.in_ch = in_ch

@@ -10,17 +10,6 @@ from ..geometry import index
 
 
 class GNR(nn.Module):
-    '''
-    HG PIFu network uses Hourglass stacks as the image filter.
-    It does the following:
-        1. Compute image feature stacks and store it in self.im_feat_list
-            self.im_feat_list[-1] is the last stack (output stack)
-        2. Calculate calibration
-        3. If training, it index on every intermediate stacks,
-            If testing, it index on the last stack.
-        4. Classification.
-        5. During training, error is calculated on all stacks.
-    '''
 
     def __init__(self, opt):
 
@@ -66,17 +55,6 @@ class GNR(nn.Module):
         return data
 
     def forward(self, data, train_shape=False):
-        '''
-        Given 3D points, query the network predictions for each point.
-        Image features should be pre-computed before this call.
-        store all intermediate features.
-        query() function may behave differently during training/testing.
-        :param points: [B, 3, N] world space coordinates of points
-        :param calibs: [B, 3, 4] calibration matrices for each image
-        :param transforms: Optional [B, 2, 3] image space coordinate transforms
-        :param labels: Optional [B, Res, N] gt labeling
-        :return: [B, Res, N] predictions for each point
-        '''
         data = self.get_image_feature(data)
         if train_shape:
             error = self.nerf_renderer.train_shape(**data)

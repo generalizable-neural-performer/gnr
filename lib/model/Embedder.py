@@ -6,6 +6,9 @@ import math
 import numpy as np
 
 class PositionalEncoding:
+    """
+    GNR uses positional encoding in NeRF for coordinate embedding 
+    """
     def __init__(self, d, num_freqs=10, min_freq=None, max_freq=None, freq_type='linear'):
         self.num_freqs = num_freqs
         self.min_freq = min_freq
@@ -42,6 +45,9 @@ class PositionalEncoding:
         return torch.cat([fn(inputs) for fn in self.embed_fns], -1)
 
 class SphericalHarmonics:
+    """
+    GNR uses Sepherical Harmonics for view direction embedding 
+    """
     def __init__(self, d = 3, rank = 3):
         assert d % 3 == 0
         self.rank = max([int(rank),0])
@@ -82,5 +88,4 @@ class SphericalHarmonics:
             return torch.Tensor([])
 
     def embed(self, inputs):
-        # return torch.cat([self.SH(inputs[...,i:i+3]) for i in range(0, inputs.shape[-1], 3)], -1)
         return self.SH(inputs)

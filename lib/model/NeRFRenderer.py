@@ -55,16 +55,12 @@ class NeRFRenderer:
         self.vgg_loss = vgg_loss
         self.use_smpl_sdf = opt.use_smpl_sdf
         self.use_t_pose = opt.use_t_pose
-        self.use_skel_dist = opt.use_skel_dist
-        self.use_skel_dir = opt.use_skel_dir
-        self.use_smpl_betas = opt.use_smpl_betas
         self.use_smpl_depth = opt.use_smpl_depth
         self.sel_cords = None
         self.regularization = opt.regularization
         self.angle_diff = opt.angle_diff
         self.use_occlusion = opt.use_occlusion and self.use_smpl_depth
         self.use_occlusion_net = opt.use_occlusion_net
-        self.use_vh_sdf = opt.use_vh_sdf
 
         self.gamma = 1
         self.pts_nml = None
@@ -156,90 +152,9 @@ class NeRFRenderer:
         # re = rays_e.cpu().numpy().reshape(-1,3)
         return rays_s, rays_e
 
-    def get_plucker_line(self, countour, w2c, cam, mesh_param):
-        """
-        Unused
-        """
-        x = (countour[:,0].float() - cam[2]) / cam[0]
-        y = (countour[:,1].float() - cam[3]) / cam[1]
-        near, far = cam[-2], cam[-1]
-        center, spatial_freq = mesh_param['center'], mesh_param['spatial_freq']
-        if len(cam) > 6:
-            xp, yp = x, y
-            for _ in range(3): # iter to undistort
-                x2 = x*x
-                y2 = y*y
-                xy = x*y
-                r2 = x2 + y2
-                c = (1 + r2*(cam[4]+r2*(cam[5]+r2*cam[8])))
-                x = (xp - cam[6]*2*xy - cam[7]*(r2+2*x2)) / (c+1e-9)
-                y = (yp - cam[7]*2*xy - cam[6]*(r2+2*y2)) / (c+1e-9)
-        z = torch.ones_like(x)
-        starts = torch.stack([x*near,y*near,z*near],-1)
-        ends   = torch.stack([x*far, y*far, z*far], -1)
-        c2w = torch.inverse(w2c)
-        R, t = c2w[:3,:3], c2w[:3, 3]
-
-        rays_s = torch.sum(starts[..., None, :]* R, -1) + t
-        rays_e = torch.sum(ends[..., None, :]  * R, -1) + t
-        rays_d = rays_e - rays_s
-        rays_d = rays_d / (torch.norm(rays_d, dim=-1, keepdim=True) + 1e-8)
-        if self.use_nml:
-            rays_s = (rays_s - center) * spatial_freq / (self.width / 2)
-        return rays_d, torch.cross(rays_s, rays_d, dim=-1)
-
-    def warp_mat(self, face_verts):
-        """
-        Unused
-        """
-        # [[x0, x1, x2, nx/sqrt(size)]
-        #  [y0, y1, y2, ny/sqrt(size)]
-        #  [z0, z1, z2, nz/sqrt(size)]
-        #  [1,  1,  1,  0            ]]
-        a = face_verts[:,1,:] - face_verts[:,0,:]
-        b = face_verts[:,2,:] - face_verts[:,0,:]
-        normal = torch.cross(a, b, dim=-1)
-        # cross product's norm equal 2*size of the triangluar
-        size = torch.norm(normal/2, dim=-1, keepdim=True)
-        normal = normal / torch.sqrt(size + 1e-10)
-        mat = torch.cat([face_verts.permute([0,2,1]), normal[...,None]], dim=-1)       # [N_samples, 3, 4]
-        column = torch.tensor([[[1,1,1,0]]], dtype=torch.float32, device=face_verts.device).repeat([mat.shape[0],1,1])
-        mat = torch.cat([mat, column], dim=1)
-
-        return mat
-
-    def canonical_warpping(self, verts, verts_can, pts):
-        """
-        Unused
-        """
-        warp = self.warp_mat(verts)
-        warp_can = self.warp_mat(verts_can)
-
-        pts_homo = torch.cat([pts, torch.ones([pts.shape[0], 1], dtype=torch.float32, device=pts.device)], dim=-1)
-        pts_can = warp_can @ torch.inverse(warp) @ pts_homo[...,None]
-        
-        return pts_can[:,:3,0]
-
-    def multiview_consistency(self, pts, feats, calibs, depth, persps=None):
-        """
-        Unused
-        """
-        xyz = self.projection(pts.permute((1,0))[None,...].expand([calibs.shape[0],-1,-1]), calibs, persps)
-        xy = xyz[:, :2, :]                  # [self.num_views, 2, self.N_samples]
-        z = xyz[:, 2:, :].permute((2,0,1))
-        if persps is not None:
-            xy = xy / torch.tensor([[[self.width],[self.height]]], \
-                dtype = xyz.dtype, device = xyz.device) * 2 - 1
-        latent = index(feats, xy)           # [self.num_views, C, self.N_samples(*2)]
-        latent = latent.permute((2,0,1))    # [self.N_samples(*2), self.num_views, C]
-
-        depth_z = index(depth, xy, mode='nearest')
-        depth_z = depth_z.permute((2,0,1))
-        
-        return depth_z, z
-
     def make_att_input(self, pts, viewdirs, calibs, smpl):
         """
+        Prepare input for multiview attention based SSOAB
         """
         if self.projection_mode == 'perspective':
             cam_c = torch.inverse(calibs)[:,:3,3]
@@ -265,7 +180,12 @@ class NeRFRenderer:
         return attdirs
 
     def make_nerf_input(self, pts, feats, images, smpl, calibs, mesh_param, persps=None, is_train=True):
+        """
+        Aggregate Geometric Body Shape Embedding for NeRF input
+        """
         nerf_input, source_rgb = [], None
+
+        # Convert query point to normalized body coordinate (normalized scale and body orientation)
         center, spatial_freq = mesh_param['center'], mesh_param['spatial_freq']
         if self.use_nml:
             # points normalized to volume [-1,1]^3
@@ -275,6 +195,7 @@ class NeRFRenderer:
         else:
             nerf_input.append(pts)
 
+        # Body shape embedding
         if self.use_smpl_sdf or self.use_t_pose:
             self.mesh_searcher.set_mesh(smpl['verts'], smpl['faces'])
             closest_pts, closest_idx = self.mesh_searcher.nearest_points(pts)
@@ -283,6 +204,7 @@ class NeRFRenderer:
                 closest_faces = smpl['faces'][closest_idx.long()]
                 t_pose_verts = smpl['t_verts'][closest_faces.long()]
                 t_pose_coords = t_pose_verts.mean(dim=1)
+                # T-pose correspondance
                 nerf_input.append(t_pose_coords)
 
             if self.use_smpl_sdf:
@@ -294,41 +216,12 @@ class NeRFRenderer:
                 self.alpha_smpl = (signs + 1) / 2
                 norm = torch.norm(reg_vecs, dim=1, keepdim=True) + 1e-8
                 sdf = norm * signs[...,None]
+                # Normalized SDF Gradient
                 nerf_input.append(reg_vecs / norm)
+                # SDF (scale for a constant for faster convergence)
                 nerf_input.append(torch.tanh(sdf*20))
 
-        if self.use_skel_dist or self.use_skel_dir:
-            skel_vecs = pts[:, None, :] - smpl['joints'][None, :, :]
-            if self.use_nml:
-                skel_vecs = skel_vecs * spatial_freq / (self.width / 2)  # normalized to volume [-1,1]^3
-                skel_vecs = skel_vecs @ smpl['rot'][0]
-            dist = torch.norm(skel_vecs, dim=2)
-            if self.use_skel_dist:
-                nerf_input.append(dist - 1.)
-            if self.use_skel_dir:
-                unit_vecs = skel_vecs / (dist[:, :, None] + 1e-9)
-                unit_vecs = unit_vecs.view(unit_vecs.size(0), -1)
-                nerf_input.append(unit_vecs)
-
-        if self.use_smpl_betas:
-            betas = smpl['betas'] / 5.0
-            betas = betas[None, :].repeat(len(pts), 1)
-            nerf_input.append(betas)
-
-        if self.use_vh_sdf:
-            contours = smpl['contour']
-            dist_list = []
-            for contour, calib, persp in zip(contours, calibs, persps):
-                n, m = self.get_plucker_line(contour, calib, persp, mesh_param)
-                x = self.pts_nml if self.use_nml else pts
-                x = x[:,None].expand([-1, n.shape[0], -1])
-                n = n[None,:].expand([x.shape[0], -1, -1])
-                m = m[None,:].expand([x.shape[0], -1, -1])
-                dist = torch.norm(torch.cross(x, n, dim=-1) - m, dim=-1)
-                dist_list.append(dist.min(1)[0])
-            dists = torch.stack(dist_list, dim=0).min(0)[0]
-            nerf_input.append(torch.tanh(dists[:,None]*20))
-
+        # Multiview image feature
         if feats is not None:
             xyz = self.projection(pts.permute((1,0))[None,...].expand([calibs.shape[0],-1,-1]), calibs, persps)
             xy = xyz[:, :2, :]                  # [self.num_views, 2, self.N_samples]
@@ -348,6 +241,9 @@ class NeRFRenderer:
         return nerf_input, source_rgb
 
     def make_nerf_output(self, nerf_output, t_vals, norm, source_rgb, is_train=True):
+        """
+        Renders ray by integrating sample points
+        """
         dists = t_vals[...,1:] - t_vals[...,:-1]
         dists = torch.cat([dists, torch.tensor([1e10], device=dists.device).expand(dists[...,:1].shape)], -1)  # [N_rays, N_samples]
         dists = dists * norm
@@ -400,6 +296,7 @@ class NeRFRenderer:
         pts = rays_e[:,None,:] * t_vals[...,None] + (1-t_vals[...,None]) * rays_s[:,None,:]
         pts = pts.reshape(-1, 3)
 
+        # Use visual hull to skip sample points outside the body
         inside, smpl_vis, scan_vis = None, None, None
         if self.use_vh:
             inside, smpl_vis, scan_vis = self.inside_pts_vh(pts, masks, smpl, calibs, persps)
@@ -411,24 +308,32 @@ class NeRFRenderer:
                 return self.default_rgb([N_rays, self.rgb_ch], dtype=torch.float32, device=ray_batch.device), \
                        torch.zeros([N_rays], dtype=torch.float32, device=ray_batch.device)
 
+        # When train RenderPeople with scan ground truth, prepare 3D supervision
         if is_train and scan is not None:
             scan_verts, scan_faces = scan
             self.mesh_searcher.set_mesh(scan_verts, scan_faces)
             self.alpha_gt = (self.mesh_searcher.inside_mesh(pts) + 1) / 2
 
+        # Prepare attention based appereance blending input
         viewdirs = (rays_s - rays_e)[:,None,:].expand(-1,self.N_samples,-1)
         viewdirs = viewdirs.reshape(-1,3)[inside].requires_grad_()
         attdirs = self.make_att_input(pts, viewdirs, calibs, smpl) if self.use_attention else []
 
+        # Prepare geometry body shape embedding input for NeRF
         nerf_input, source_rgb = self.make_nerf_input(pts, feats, images, smpl, calibs, mesh_param, persps)
         
+        # Feed to the network
         nerf_output = torch.cat([self.nerf(nerf_input[i:i+self.chunk], attdirs[i:i+self.chunk], smpl_vis=smpl_vis) \
                                  for i in range(0, nerf_input.shape[0], self.chunk)], 0)
         self.alpha = torch.sigmoid(nerf_output[...,3]*self.gamma)
+
+        # If RenderPeople available, supervise the occlusion
         if self.use_occlusion_net:
             self.occ_gt = scan_vis.float()
             self.occ = nerf_output[:, -self.num_views:]
             nerf_output = nerf_output[:, :-self.num_views]
+
+        # Regularize the alpha distribution
         if self.regularization and is_train:
             self.alpha_grad = torch.autograd.grad(self.alpha, self.pts_nml, grad_outputs=torch.ones_like(self.alpha), retain_graph=True)[0]
 
@@ -452,12 +357,16 @@ class NeRFRenderer:
         z_vals = t_vals * q_persps[-2]  + (1-t_vals) * q_persps[-1] if persps is not None and q_persps is not None else 2*t_vals - 1
         depth = torch.sum(weights * z_vals, -1)
 
+        # Regularize the angle difference of apperance
         if self.angle_diff and is_train:
             self.angle_diff_grad = torch.autograd.grad(rgb_map, viewdirs, grad_outputs=torch.ones_like(rgb_map), retain_graph=True)[0]
 
         return rgb_map, depth
 
     def inside_pts_vh(self, pts, masks, smpl, calibs, persps=None):
+        """
+        Valid sample point selection via visual hull
+        """
         xyz = self.projection(pts.permute((1,0))[None,...].expand([calibs.shape[0],-1,-1]), calibs, persps)
         xy = xyz[:, :2, :]
         if persps is not None:
@@ -482,6 +391,9 @@ class NeRFRenderer:
 
 
     def render(self, feats, images, masks, calibs, bbox, mesh_param, smpl=None, scan=None, persps=None):
+        """
+        Render a image from give camera pose
+        """
         self.debug_idx += 1
         if persps is None:
             rays_s, rays_e = self.get_rays(bbox, calibs[-1])  # (H, W, 3), (H, W, 3)
@@ -509,7 +421,9 @@ class NeRFRenderer:
         return loss
 
     def render_path(self, feats, images, masks, calibs, bbox, mesh_param, smpl=None, scan=None, persps=None):
-        
+        """
+        Render a path given trajectory
+        """
         top, bottom, left, right = bbox
         height, width = max(self.height, bottom-top), max(self.width, right-left)
         calibs_source, calibs_query = calibs[:self.num_views], calibs[self.num_views:]
@@ -546,6 +460,9 @@ class NeRFRenderer:
         return rgbs, depths
 
     def train_shape(self, feats, images, masks, calibs, bbox, mesh_param, smpl=None, scan=None, persps=None):
+        """
+        Unused
+        """
         pts, alpha_gt = mesh_param['samples'].transpose(1,0), mesh_param['labels']
         persps = persps[:self.num_views] if persps is not None else None
         nerf_input, _ = self.make_nerf_input(pts, feats, images[:self.num_views], smpl, calibs[:self.num_views], mesh_param, persps=persps)
@@ -561,13 +478,17 @@ class NeRFRenderer:
         return loss
 
     def reconstruct(self, feats, images, masks, calibs, bbox, mesh_param, smpl=None, scan=None, persps=None):
+        """
+        Mesh Reconstruction borrowed form PIFu
+        """
+        # Deterimine 3D bounding box
         center, spatial_freq = mesh_param['center'].cpu().numpy(), mesh_param['spatial_freq']
         top, bottom, left, right = bbox
         left, right = 0, 512
         bb_min = [left-self.width/2, top-self.height/2, left-self.width/2]
         bb_max = [right-self.width/2, bottom-self.height/2, right-self.width/2]
-        # bb_min = [-self.width/2, -self.height/2, -self.width/2]
-        # bb_max = [self.width/2, self.height/2, self.width/2]
+
+        # Make mesh grid in normalized body cordinate
         linspaces = [np.linspace(bb_min[i], bb_max[i], self.N_grid) for i in range(len(bb_min))]
         grids = np.stack(np.meshgrid(linspaces[0], linspaces[1], linspaces[2], indexing='ij'), -1)
         sh = grids.shape
@@ -576,13 +497,16 @@ class NeRFRenderer:
             'feats': feats, 'images': images, 'smpl': smpl, 'calibs': calibs[:self.num_views], 
             'mesh_param': mesh_param, 'persps': persps[:self.num_views] if persps is not None else None
         }
+
+        # Reconstruct use progressive octree reconstrution
         sdf = self.octree_reconstruct(pts, masks, **recon_kwargs)
         verts, faces, normals, _ = measure.marching_cubes_lewiner(sdf, self.threshold)
 
+        # Convert marching cubes coordinate back to world coordinate
         verts = (verts - self.N_grid/2) / self.N_grid * np.array([[right-left, bottom-top, right-left]])
         verts = verts / spatial_freq + center
         
-        # use laplacian smooth if the mesh is noisy 
+        # use laplacian smooth if the mesh is noisy
         if self.opt.laplacian > 0:
             mesh = trimesh.Trimesh(verts, faces, process=False)
             trimesh.smoothing.filter_laplacian(mesh, iterations=self.opt.laplacian)
@@ -679,3 +603,86 @@ class NeRFRenderer:
             reso //= 2
 
         return sdf.reshape(resolution)
+
+
+    def get_plucker_line(self, countour, w2c, cam, mesh_param):
+        """
+        Unused
+        """
+        x = (countour[:,0].float() - cam[2]) / cam[0]
+        y = (countour[:,1].float() - cam[3]) / cam[1]
+        near, far = cam[-2], cam[-1]
+        center, spatial_freq = mesh_param['center'], mesh_param['spatial_freq']
+        if len(cam) > 6:
+            xp, yp = x, y
+            for _ in range(3): # iter to undistort
+                x2 = x*x
+                y2 = y*y
+                xy = x*y
+                r2 = x2 + y2
+                c = (1 + r2*(cam[4]+r2*(cam[5]+r2*cam[8])))
+                x = (xp - cam[6]*2*xy - cam[7]*(r2+2*x2)) / (c+1e-9)
+                y = (yp - cam[7]*2*xy - cam[6]*(r2+2*y2)) / (c+1e-9)
+        z = torch.ones_like(x)
+        starts = torch.stack([x*near,y*near,z*near],-1)
+        ends   = torch.stack([x*far, y*far, z*far], -1)
+        c2w = torch.inverse(w2c)
+        R, t = c2w[:3,:3], c2w[:3, 3]
+
+        rays_s = torch.sum(starts[..., None, :]* R, -1) + t
+        rays_e = torch.sum(ends[..., None, :]  * R, -1) + t
+        rays_d = rays_e - rays_s
+        rays_d = rays_d / (torch.norm(rays_d, dim=-1, keepdim=True) + 1e-8)
+        if self.use_nml:
+            rays_s = (rays_s - center) * spatial_freq / (self.width / 2)
+        return rays_d, torch.cross(rays_s, rays_d, dim=-1)
+
+    def warp_mat(self, face_verts):
+        """
+        Unused
+        """
+        # [[x0, x1, x2, nx/sqrt(size)]
+        #  [y0, y1, y2, ny/sqrt(size)]
+        #  [z0, z1, z2, nz/sqrt(size)]
+        #  [1,  1,  1,  0            ]]
+        a = face_verts[:,1,:] - face_verts[:,0,:]
+        b = face_verts[:,2,:] - face_verts[:,0,:]
+        normal = torch.cross(a, b, dim=-1)
+        # cross product's norm equal 2*size of the triangluar
+        size = torch.norm(normal/2, dim=-1, keepdim=True)
+        normal = normal / torch.sqrt(size + 1e-10)
+        mat = torch.cat([face_verts.permute([0,2,1]), normal[...,None]], dim=-1)       # [N_samples, 3, 4]
+        column = torch.tensor([[[1,1,1,0]]], dtype=torch.float32, device=face_verts.device).repeat([mat.shape[0],1,1])
+        mat = torch.cat([mat, column], dim=1)
+
+        return mat
+
+    def canonical_warpping(self, verts, verts_can, pts):
+        """
+        Unused
+        """
+        warp = self.warp_mat(verts)
+        warp_can = self.warp_mat(verts_can)
+
+        pts_homo = torch.cat([pts, torch.ones([pts.shape[0], 1], dtype=torch.float32, device=pts.device)], dim=-1)
+        pts_can = warp_can @ torch.inverse(warp) @ pts_homo[...,None]
+        
+        return pts_can[:,:3,0]
+
+    def multiview_consistency(self, pts, feats, calibs, depth, persps=None):
+        """
+        Unused
+        """
+        xyz = self.projection(pts.permute((1,0))[None,...].expand([calibs.shape[0],-1,-1]), calibs, persps)
+        xy = xyz[:, :2, :]                  # [self.num_views, 2, self.N_samples]
+        z = xyz[:, 2:, :].permute((2,0,1))
+        if persps is not None:
+            xy = xy / torch.tensor([[[self.width],[self.height]]], \
+                dtype = xyz.dtype, device = xyz.device) * 2 - 1
+        latent = index(feats, xy)           # [self.num_views, C, self.N_samples(*2)]
+        latent = latent.permute((2,0,1))    # [self.N_samples(*2), self.num_views, C]
+
+        depth_z = index(depth, xy, mode='nearest')
+        depth_z = depth_z.permute((2,0,1))
+        
+        return depth_z, z

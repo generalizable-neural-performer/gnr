@@ -1,3 +1,8 @@
+"""
+    This file is directly borrowed from PIFu
+    GNR uses PIFu's Stacked-Hour-Glass for image encoding
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

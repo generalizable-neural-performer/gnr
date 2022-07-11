@@ -101,8 +101,7 @@ class GeneBodyDataset(Dataset):
         self.split = np.load(os.path.join(self.root, 'genebody_split.npy'), allow_pickle=True).item()
         self.sequences = self.split['train'] if self.is_train else self.split['test']
         self.frames, self.cam_names, self.subjects, self.frames_id = self.get_frames()
-        self.load_smpl_param = any([self.opt.use_smpl_sdf, self.opt.use_t_pose, \
-            self.opt.use_skel_dist, self.opt.use_skel_dir, self.opt.use_smpl_betas])
+        self.load_smpl_param = any([self.opt.use_smpl_sdf, self.opt.use_t_pose])
         self.load_smpl_mesh = any([self.opt.use_smpl_sdf, self.opt.use_t_pose])
         self.smpl_type = self.opt.smpl_type
         self.smpl_t_pose = load_obj_mesh(os.path.join(self.opt.t_pose_path, f'{self.smpl_type}.obj'))

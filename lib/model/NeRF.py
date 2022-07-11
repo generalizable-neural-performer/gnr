@@ -18,9 +18,7 @@ class NeRF(nn.Module):
 
         self.use_smpl_sdf = opt.use_smpl_sdf
         self.use_t_pose = opt.use_t_pose
-        self.use_smpl_betas = opt.use_smpl_betas
         self.angle_diff = opt.angle_diff
-        self.use_vh_sdf = opt.use_vh_sdf
         self.use_occ_net = opt.use_occlusion_net
 
         self.input_ch_pos_enc = input_ch
@@ -30,8 +28,6 @@ class NeRF(nn.Module):
         self.use_smpl = self.input_ch_smpl != 0
 
         self.input_ch_feat = input_ch_feat + 3
-        if self.use_smpl_betas: self.input_ch_feat += 10
-        if self.use_vh_sdf: self.input_ch_feat += 1
 
         self.skips = opt.skips
         self.use_viewdirs = opt.use_viewdirs and opt.use_attention
@@ -47,7 +43,6 @@ class NeRF(nn.Module):
         
         self.use_attention = opt.use_attention
         self.use_bn = opt.use_bn
-        self.use_anchor = opt.use_anchor
         self.spatial_freq = spatial_freq
         self.pose_embeder = PositionalEncoding(self.input_ch_pos_enc, num_freqs=pose_freqs, min_freq=spatial_freq*0.1, max_freq=spatial_freq*10)
         self.att_embeder = SphericalHarmonics(d = self.input_ch_atts) if self.use_sh else PositionalEncoding(self.input_ch_atts, num_freqs=att_freqs)
