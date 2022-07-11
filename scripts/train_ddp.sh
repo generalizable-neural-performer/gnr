@@ -2,7 +2,7 @@ NODES=2
 GPU_PER_NODES=8
 GENEBODY_ROOT=put-your-root-here
 MASTER=your-address-of-master-machine
-COMMAND=${1:-apps/train_genebody.py --config configs/train.txt --dataroot ${GENEBODY_ROOT}}
+COMMAND=${1:-apps/train_genebody.py --config configs/train.txt --dataroot ${GENEBODY_ROOT} --ddp}
 for ((i=0; i<$NODES; ++i)) do
     python -m torch.distributed.launch \
             --master_addr ${MASTER} \
