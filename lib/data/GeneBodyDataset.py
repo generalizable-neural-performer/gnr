@@ -11,7 +11,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir,'..'))
 # import trimesh
 from lib.ply_util import load_ply
-from lib.renderer.mesh import load_obj_mesh
+from genebody.mesh import load_obj_mesh
 import scipy.interpolate as interpolater
 import random
 from scipy.optimize import minimize
@@ -85,9 +85,9 @@ class GeneBodyDataset(Dataset):
         self.projection_mode = 'perspective'
         self.eval_skip = self.opt.eval_skip
         self.train_skip = self.opt.train_skip
-        self.smpl_depth_path = self.opt.ghr_smpl_depth_path
+        self.genebody_seq_len = 150
 
-        self.root = root
+        self.root = root if root is not None else opt.dataroot
         self.phase = 'val'
         self.load_size = self.opt.loadSize
 
@@ -100,10 +100,6 @@ class GeneBodyDataset(Dataset):
         # self.sequences = self.opt.ghr_seq if phase == 'train' else self.opt.ghr_test_seq
         self.split = np.load(os.path.join(self.root, 'genebody_split.npy'), allow_pickle=True).item()
         self.sequences = self.split['train'] if self.is_train else self.split['test']
-        if self.opt.ghr_load_list:
-            self.sequences = self.opt.ghr_seq if phase == 'train' else self.opt.ghr_test_seq
-        else:
-            self.sequences = np.loadtxt(self.opt.ghr_train, dtype=str) if phase == 'train' else np.loadtxt(self.opt.ghr_val, dtype=str)
         self.frames, self.cam_names, self.subjects, self.frames_id = self.get_frames()
         self.load_smpl_param = any([self.opt.use_smpl_sdf, self.opt.use_t_pose, \
             self.opt.use_skel_dist, self.opt.use_skel_dir, self.opt.use_smpl_betas])
@@ -132,7 +128,7 @@ class GeneBodyDataset(Dataset):
         for seq in sequences:
             if os.path.exists(os.path.join(self.root, seq)):
                 files = sorted([f for f in os.listdir(os.path.join(self.root, \
-                        seq, 'new_smpl')) \
+                        seq, 'smpl')) \
                         if f[-4:] == '.obj'])
                 files = sorted(files)
                 cam_names += ['%02d' for i in range(len(files))]
@@ -144,8 +140,7 @@ class GeneBodyDataset(Dataset):
                     frames += [f]
         return frames, cam_names, subjects, frames_id
 
-    def get_render_poses(self, cam_annot, move_cam=150):
-        annots = np.load(cam_annot, allow_pickle=True).item()['cams']
+    def get_render_poses(self, annots, move_cam=150):
         height, pitch = [], []
         for view in range(1,48,3):
             view = '%02d' % view
@@ -253,7 +248,7 @@ class GeneBodyDataset(Dataset):
             # The ids are an even distribution of num_views around view_id
             view_ids = self.input_views + [view_id]
         else:
-            if self.render_path is not None:
+            if self.is_render:
                 view_ids = self.input_views
             else:
                 view_ids = self.input_views + test_views
@@ -280,7 +275,7 @@ class GeneBodyDataset(Dataset):
             mask_np = imageio.imread(mask_path[0])
             size = image_np.shape
             if self.use_smpl_depth and i < self.num_views:
-                smpl_depth_path = os.path.join(self.smpl_depth_path, subject, 'smpl_depth', self.cam_names[sid] % vid)
+                smpl_depth_path = os.path.join(self.root, subject, 'smpl_depth', self.cam_names[sid] % vid)
                 smpl_depth_path = [os.path.join(smpl_depth_path,f) for f in os.listdir(smpl_depth_path) \
                                     if frame in f]
                 smpl_depth = imageio.imread(smpl_depth_path[0])
@@ -356,9 +351,10 @@ class GeneBodyDataset(Dataset):
 
         if self.is_render:
             # render free view point video on full image resolution 
-            render_c2ws = self.get_render_poses(annot_path, self.move_cam)
-            w2c = np.linalg.inv(render_c2ws[sid])
-            K = annot_path['25']['K']
+            render_id = sid % (self.genebody_seq_len // self.eval_skip)
+            render_c2ws = self.get_render_poses(annots, self.move_cam)
+            w2c = np.linalg.inv(render_c2ws[render_id])
+            K = annots['25']['K']
 
             render_extrinsics = torch.from_numpy(w2c.astype(np.float32))
             near, far = self.get_near_far(smpl_verts, w2c)
@@ -401,6 +397,9 @@ class GeneBodyDataset(Dataset):
         param_dir = os.path.join(self.root, subject, f'param')
         param_path = [os.path.join(param_dir,f) for f in os.listdir(param_dir) if frame in f]
         param = np.load(os.path.join(param_path[0]), allow_pickle=True).item()['smplx']
+        for key in param.keys():
+            if isinstance(param[key], torch.Tensor):
+                param[key] = param[key].numpy()
 
         smpl_dir = os.path.join(self.root, subject, f'smpl')
         smpl_path = [os.path.join(smpl_dir,f) for f in os.listdir(smpl_dir) if frame in f][0]

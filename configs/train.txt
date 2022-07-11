@@ -44,8 +44,8 @@ ddp = False
 train_encoder = False
 projection_mode = perspective
 smpl_type = smplx
-use_occlusion = False
-use_smpl_depth = False
+use_occlusion = True
+use_smpl_depth = True
 eval_skip = 15
 train_skip = 1
 

@@ -2,6 +2,7 @@ import os, sys
 import numpy as np 
 import cv2, imageio
 from mesh import load_ply, load_obj_mesh
+import torch
 
 
 def image_cropping(mask, padding=0.1):
@@ -119,6 +120,9 @@ class GeneBodyReader():
         # the smpl_param is a dictionary of smplx parameters which can be directory passed to a SMPLX forward pass
         # via SMPLXLayer(**smpl_param) if each value of it is converted to torch.Tensor
         smpl_param = param["smplx"]
+        for key in param.keys():
+            if isinstance(smpl_param[key], torch.Tensor):
+                smpl_param[key] = smpl_param[key].numpy()
         # For GeneBody, we fit human performer in a wide age range, and SMPLx cannot fit well on kids and giants
         # we use a smplx_scale outside SMPLX model via direct scaling.
         # You can recover the smplx mesh in 'smpl' directory via SMPLX(**smpl_param) * smpl_scale

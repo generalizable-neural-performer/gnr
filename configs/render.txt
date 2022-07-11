@@ -44,14 +44,14 @@ ddp = False
 train_encoder = False
 projection_mode = perspective
 smpl_type = smplx
-use_occlusion = False
-use_smpl_depth = False
-eval_skip = 15
+use_occlusion = True
+use_smpl_depth = True
+eval_skip = 1
 train_skip = 1
 
 N_grid = 512
 laplacian = 5
-move_cam = 1
+move_cam = 150
 use_white_bkgd = False
 eval_dir = render
 

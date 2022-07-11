@@ -111,7 +111,7 @@ def train(opt, rank=0, local_rank = 0):
     gpu_num = torch.cuda.device_count()
     train_dataset = MyDataset(opt, phase='train')
     test_dataset = MyDataset(opt, phase='test', move_cam=0)
-    render_dataset = MyDataset(opt, phase='test', move_cam=opt.move_cam)
+    render_dataset = MyDataset(opt, phase='render', move_cam=opt.move_cam)
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset) if opt.ddp else None
 
     # create data loader
@@ -128,7 +128,7 @@ def train(opt, rank=0, local_rank = 0):
     render_data_iter = iter(render_data_loader)
     logging.info(f'render data size: {len(render_data_loader)}')
     # create net
-    net = GNR(opt, projection_mode=train_dataset.projection_mode)
+    net = GNR(opt)
     
     logging.info(f'Using Network: {net.name}')
     
@@ -316,10 +316,9 @@ def train(opt, rank=0, local_rank = 0):
                 os.makedirs(target_dir, exist_ok=True)
                 for vid, im in enumerate(att_rgbs):
                     imageio.imwrite(os.path.join(target_dir, f'{ridx:03d}_rgb.png'), im)
-                    if opt.ghr_render_path:
-                        depth= np.clip(np.round(depths[vid].cpu().numpy()*1000), 0, 65535).astype(np.uint16)
-                        depth[depth == 0] = 65535
-                        imageio.imwrite(os.path.join(target_dir, f'{ridx:03d}_depth.png'), depth)
+                    depth= np.clip(np.round(depths[vid].cpu().numpy()*1000), 0, 65535).astype(np.uint16)
+                    depth[depth == 0] = 65535
+                    imageio.imwrite(os.path.join(target_dir, f'{ridx:03d}_depth.png'), depth)
             if is_summary:
                 imageio.mimwrite(os.path.join(target_dir, "render_{}.mp4".format(fid)), imgs, quality=8, fps=30)
 

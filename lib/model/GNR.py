@@ -6,7 +6,6 @@ from ..net_util import init_weights
 from .NeRF import NeRF
 from .NeRFRenderer import NeRFRenderer
 from .SRFilters import SRFilters
-from .DepthNormalizer import DepthNormalizer
 from ..geometry import index
 
 

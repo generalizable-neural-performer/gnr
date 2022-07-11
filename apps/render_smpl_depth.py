@@ -145,11 +145,13 @@ def extract_float(text):
 			except ValueError as e:
 				continue
 	return flts
+
 def natural_sort(files):
 	return	sorted(files, key = lambda text: \
 		extract_float(os.path.basename(text)) \
 		if len(extract_float(os.path.basename(text))) > 0 else \
 		[float(ord(c)) for c in os.path.basename(text)])
+		
 def load_ply(file_name):
 	v = []; tri = []
 	try:
@@ -292,13 +294,12 @@ def rasterize(v, tri, size, K = np.identity(3), \
 				zbuf[y,x] = z[i]
 	return	zbuf
 
-
 def render_view(intri, dists, c2ws, meshes, view, i):
 	K = intri[i]
 	dist = dists[i]
-	c2w  = np.concatenate([c2ws[i],[[0,0,0,1]]], 0)
-	# w2c = np.linalg.inv(c2w)
-	w2c = c2w
+	# c2w  = np.concatenate([c2ws[i],[[0,0,0,1]]], 0)
+	w2c = np.linalg.inv(c2ws[i])
+	# w2c = c2w
 	out = os.path.join(args.outdir, os.path.basename(view))
 	if not os.path.isdir(out):
 		os.makedirs(out, exist_ok=True)
@@ -352,10 +353,9 @@ if __name__ == '__main__':
 	if args.annotdir == '':
 		args.annotdir = os.path.join(args.datadir, 'annots.npy')
 	annot = np.load(os.path.join(args.annotdir), allow_pickle = True).item()['cams']
-	annot = np.reshape(annot,-1)[0]
 	intri = np.array([annot[view]['K'] for view in annot.keys()], np.float32)
 	dists = np.array([annot[view]['D'] for view in annot.keys()], intri.dtype)
-	c2ws  = np.concatenate([np.array(annot[view]['c2w']) for view in annot.keys()],-1).astype(intri.dtype)
+	c2ws  = np.array([annot[view]['c2w'] for view in annot.keys()]).astype(intri.dtype)
 	print(c2ws.shape, intri.shape, dists.shape)
 	if args.outdir == '': 
 		args.outdir = os.path.join(args.datadir, 'smpl_depth')
