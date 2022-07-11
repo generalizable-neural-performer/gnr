@@ -1,0 +1,57 @@
+# put your genebody root here
+dataroot = /mnt/lustre/share_data/chengwei/GeneBody
+name = genebody
+
+load_netG_checkpoint_path = ./checkpoints/net_G
+
+random_scale = False
+random_trans = False
+
+use_nml = True
+num_random_sh = 1
+
+train = True
+test = False
+render = False
+
+num_threads = 5
+output_mesh = True
+use_attention = True
+
+use_feat_sr = False
+dp_load_ddp = False
+weighted_pool = True
+use_sh = True
+use_bn = False
+use_vgg = False
+use_viewdirs = True
+
+use_smpl_sdf = True
+use_t_pose = True
+use_skel_dist = False
+use_skel_dir = False
+use_smpl_betas = False
+regularization = False
+
+use_vh = True
+N_rand = 1024
+N_rand_infer = 4096
+N_samples = 256
+chunk = 524288
+vh_overhead = 1
+
+ddp = False
+train_encoder = False
+projection_mode = perspective
+smpl_type = smplx
+use_occlusion = False
+use_smpl_depth = False
+eval_skip = 15
+train_skip = 1
+
+N_grid = 512
+laplacian = 5
+move_cam = 1
+use_white_bkgd = False
+eval_dir = render
+

@@ -9,20 +9,6 @@
 Wei Cheng, Su Xu, Jingtan Piao, Chen Qian, Wayne Wu, Kwan-Yee Lin, Hongsheng Li<br>
 **[[Demo Video]](https://www.youtube.com/watch?v=2COR4u1ZIuk)** | **[[Project Page]](https://generalizable-neural-performer.github.io/)** | **[[Data]](https://generalizable-neural-performer.github.io/genebody.html)** | **[[Paper]](https://arxiv.org/pdf/2204.11798.pdf)**
 
-## Updates
-- [02/05/2022] GeneBody Train40 is released! Apply [here](./docs/Dataset.md#train40)! :boom: Test10 has made some adjustment on data format.
-- [29/04/2022] SMPLx fitting toolbox and benchmarks are released! :boom:
-- [26/04/2022] Code is coming soon!
-- [26/04/2022] Part of data released!
-- [26/04/2022] Techincal report released.
-- [24/04/2022] The codebase and project page are created.
-
-## Upcoming Events
-
-- [12/05/2022] Code and pretrain model release.
-- [01/06/2022] Extended370 release.
-
-
 ## Data Download
 To download and use the GeneBody dataset set, please read the instructions in [Dataset.md](./docs/Dataset.md).
 
@@ -30,6 +16,32 @@ To download and use the GeneBody dataset set, please read the instructions in [D
 GeneBody provides the per-view per-frame segmentation, using [BackgroundMatting-V2](https://github.com/PeterL1n/BackgroundMattingV2), and register the fitted [SMPLx](https://github.com/PeterL1n/BackgroundMattingV2) using our enhanced multi-view smplify repo in [here](https://github.com/generalizable-neural-performer/bodyfitting).
 
 To use annotations of GeneBody, please check the document [Annotation.md](./docs/Annotation.md), we provide a reference data fetch module in `genebody`.
+
+## Train and Evaluate GNR
+
+Setup the environment 
+```
+conda env create -f environment.yml
+conda activate gnr
+cd lib/mesh_grid && python setup.py install
+```
+Download the pre-trained model
+```
+bash scripts/download_model.sh
+```
+To render per-view depth image of GeneBody dataset
+```
+bash scripts/render_smpl_depth.sh ${GENEBODY_ROOT}
+```
+To run GNR
+```
+python apps/run_genebody.py --config configs/[train, test, render].txt --dataroot ${GENEBODY_ROOT}
+```
+if you have multiple machines and mulitple GPUs, you can try to train our model using distributed data parrallel
+```
+bash scripts/train_ddp.sh
+```
+
 
 ## Benchmarks
 We also provide benchmarks of start-of-the-art methods on GeneBody Dataset, methods and requirements are listed in [Benchmarks.md](https://github.com/generalizable-neural-performer/genebody-benchmarks).
