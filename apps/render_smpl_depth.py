@@ -306,7 +306,6 @@ def render_view(intri, dists, c2ws, meshes, view, i):
 	imgs = [os.path.join(view, f) for f in os.listdir(view) \
 		if f[-4:].lower() in ['.jpg','.png']]
 	imgs = sorted(imgs) if len(imgs) > 1 else imgs
-	imgs = [imgs[0]]
 	for i in tqdm(range(len(imgs))):
 		img = cv2.imread(imgs[i])
 		try:
@@ -356,7 +355,7 @@ if __name__ == '__main__':
 	intri = np.array([annot[view]['K'] for view in annot.keys()], np.float32)
 	dists = np.array([annot[view]['D'] for view in annot.keys()], intri.dtype)
 	c2ws  = np.array([annot[view]['c2w'] for view in annot.keys()]).astype(intri.dtype)
-	print(c2ws.shape, intri.shape, dists.shape)
+
 	if args.outdir == '': 
 		args.outdir = os.path.join(args.datadir, 'smpl_depth')
 	if not os.path.isdir(args.outdir):
