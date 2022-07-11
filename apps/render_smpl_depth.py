@@ -355,7 +355,6 @@ if __name__ == '__main__':
 	intri = np.array([annot[view]['K'] for view in annot.keys()], np.float32)
 	dists = np.array([annot[view]['D'] for view in annot.keys()], intri.dtype)
 	c2ws  = np.array([annot[view]['c2w'] for view in annot.keys()]).astype(intri.dtype)
-
 	if args.outdir == '': 
 		args.outdir = os.path.join(args.datadir, 'smpl_depth')
 	if not os.path.isdir(args.outdir):

@@ -22,6 +22,7 @@ use_sh = True
 use_viewdirs = True
 use_occlusion = True
 use_smpl_depth = True
+use_occlusion_net = True
 
 # Ray Sampling
 use_vh = True

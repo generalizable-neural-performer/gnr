@@ -329,8 +329,9 @@ class NeRFRenderer:
 
         # If RenderPeople available, supervise the occlusion
         if self.use_occlusion_net:
-            self.occ_gt = scan_vis.float()
-            self.occ = nerf_output[:, -self.num_views:]
+            if is_train:
+                self.occ_gt = scan_vis.float()
+                self.occ = nerf_output[:, -self.num_views:]
             nerf_output = nerf_output[:, :-self.num_views]
 
         # Regularize the alpha distribution
@@ -383,7 +384,7 @@ class NeRFRenderer:
             smpl_depth = index(smpl['depth'], xy, 'nearest').squeeze(1).permute((1,0))[inside]
             depth = xyz[:,2,:].permute((1,0))[inside]
             smpl_vis = ((depth - smpl_depth) <= 0) * (smpl_depth > 0)
-        if self.use_occlusion_net:
+        if self.use_occlusion_net and 'scan_depth' in smpl.keys():
             scan_depth = index(smpl['scan_depth'], xy, 'nearest').squeeze(1).permute((1,0))[inside]
             depth = xyz[:,2,:].permute((1,0))[inside]
             scan_vis = ((depth - scan_depth) <= 0) * (scan_depth > 0)
