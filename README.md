@@ -32,7 +32,7 @@ conda env create -f environment.yml
 conda activate gnr
 cd lib/mesh_grid && python setup.py install
 ```
-Download the pre-trained model
+Download the pre-trained model, if it raises a gdown failure, try to download the zip file from your browser from [GoogleDrive](https://drive.google.com/file/d/17kVOpH4Hud-ZxKlvj0vbKB5dkIxwoHHm/view?usp=sharing) or [OneDrive](https://hkustconnect-my.sharepoint.com/:u:/g/personal/wchengad_connect_ust_hk/EXeGejAW0y9HoUz_TxNJk80BIb3nCQXITZld-fGOoxhm8Q?e=cFcx7r).
 ```
 bash scripts/download_model.sh
 ```

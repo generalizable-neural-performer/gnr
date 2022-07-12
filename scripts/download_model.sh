@@ -1,5 +1,5 @@
-mkdir -p logs/genbody && cd logs/genbody
-gdown 1oPVk0beNcoz215gZjh7KM3xOzdPS1aIY
+mkdir -p logs/genebody && cd logs/genebody
+gdown 17kVOpH4Hud-ZxKlvj0vbKB5dkIxwoHHm
 unzip genebody-pretrained.zip
 rm -f genebody-pretrained.zip
 cd ../..

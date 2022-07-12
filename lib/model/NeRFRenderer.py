@@ -329,7 +329,7 @@ class NeRFRenderer:
 
         # If RenderPeople available, supervise the occlusion
         if self.use_occlusion_net:
-            if is_train:
+            if is_train and scan is not None:
                 self.occ_gt = scan_vis.float()
                 self.occ = nerf_output[:, -self.num_views:]
             nerf_output = nerf_output[:, :-self.num_views]
