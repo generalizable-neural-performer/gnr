@@ -47,7 +47,7 @@ We choose 8 camera views to manually check the results of auto annoataion and ma
 GeneBody provides per-frame SMPLx estimation, and store the mesh in `smpl` subfolder and SMPLx parameters in `param` subfolder. The SMPLx toolbox is also provided in this [repo](https://github.com/generalizable-neural-performer/bodyfitting).
 
 ### SMPLx parameters
-GeneBody provide SMPLs parameter and 3D keypoints in `param` subfolder. More specifally, the dictionary 'smplx', can be directly feed to SMPLX [forward](https://github.com/vchoutas/smplx/blob/master/smplx/body_models.py#L1111) pass as long as all the parameters are converted to torch tensor, an example is provided in the [data interface](../genebody/genebody.py#L189).
+GeneBody provide SMPLs parameter and 3D keypoints in `param` subfolder. More specifally, the dictionary 'smplx', can be directly feed to SMPLX [forward](https://github.com/vchoutas/smplx/blob/master/smplx/body_models.py#L1111) pass as long as all the parameters are converted to torch tensor, an example to generate SMPLX from parameters is provided in the [data interface](../genebody/genebody.py#L189).
 
 ### SMPLx scale
 GeneBody has a large variation on performers' age distribution, while SMPLx model typically fails to fit well on kids and giants. We introduce 'smplx_scale' outside the SMPLx model, and jointly optimize scale and body model parameters during fitting. Thus, to recover the fitted mesh in `smpl` subfolder using parameters in `param` subfolder, you need to multiple a 'smplx_scale' to the vertices or 3d joints output by the body model.
