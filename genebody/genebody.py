@@ -1,9 +1,9 @@
 import os, sys
 import numpy as np 
 import cv2, imageio
-from mesh import load_ply, load_obj_mesh
+from mesh import load_ply, load_obj_mesh, write_obj_mesh
 import torch
-
+from gender import genebody_gender
 
 def image_cropping(mask, padding=0.1):
     """
@@ -69,6 +69,7 @@ class GeneBodyReader():
         self.loadsize = loadsize
         # the default seting of GNR is to use these four source views of GeneBody
         self.sourceviews = ['01', '13', '25', '37']
+        self.gender = genebody_gender
 
     def get_views(self, subject):
         """
@@ -120,7 +121,7 @@ class GeneBodyReader():
         # the smpl_param is a dictionary of smplx parameters which can be directory passed to a SMPLX forward pass
         # via SMPLXLayer(**smpl_param) if each value of it is converted to torch.Tensor
         smpl_param = param["smplx"]
-        for key in param.keys():
+        for key in smpl_param.keys():
             if isinstance(smpl_param[key], torch.Tensor):
                 smpl_param[key] = smpl_param[key].numpy()
         # For GeneBody, we fit human performer in a wide age range, and SMPLx cannot fit well on kids and giants
@@ -185,6 +186,33 @@ class GeneBodyReader():
         near, far = near-(far-near)*pad, far+(far-near)*pad
         return near, far
 
+    def smpl_from_param(self, model_path, subject, smpl_param, smpl_scale):
+        import smplx
+        smpl = smplx.SMPLX(
+            model_path=model_path,
+            gender=self.gender[subject],
+            use_pca=False,
+        )
+        smpl_param = smpl_param.copy()
+        for key in smpl_param.keys():
+            if isinstance(smpl_param[key], np.ndarray):
+                smpl_param[key] = torch.from_numpy(smpl_param[key])
+        output = smpl(
+            **smpl_param,
+            return_full_pose=True,
+            use_hands=False,
+            use_feet_keypoints=False,
+        )
+        verts = output['vertices'].numpy().reshape(-1,3)
+
+        # To align with keypoints3d saved in param, use the base keypoints only,
+        # if you want to use the full keypoints3d with extra joints and landmarks,
+        # please refer the the definition of joints in
+        # vertex_joint_selector.py and landmarks in vertices2landmarks in lbs.py
+        keypoints3d = output['joints'].numpy().reshape(-1,3)[:55]
+        
+        return verts*smpl_scale, smpl.faces, keypoints3d*smpl_scale
+
 
 if __name__ == "__main__":
     ## Here is a example
@@ -208,3 +236,15 @@ if __name__ == "__main__":
 
     near, far = genebody.get_near_far(verts, c2ws[0])
     print('the near far is ', near, far)
+
+    # to test smplx parameter tor smplx mesh, please try the following command
+    # python genebody/genebody.py path_to_genebody fuzhizhi path_to_smplx
+    if len(sys.argv) == 4:
+        import trimesh
+        smplx_path = sys.argv[3]
+        verts_from_param, faces_from_param, kpts_from_param = genebody.smpl_from_param(smplx_path, subject, smpl_param, smpl_scale)
+        print('average error of parameter generated smplx is ', np.abs(verts_from_param-verts).mean())
+        print('average error of parameter generated keypoints is ', np.abs(smpl_param['keypoints3d'].reshape(-1,3)-kpts_from_param).mean())
+        smpl_mesh = trimesh.Trimesh(verts_from_param, faces_from_param)
+        smpl_mesh.export(f'{subject}.obj')
+

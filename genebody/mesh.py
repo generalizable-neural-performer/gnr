@@ -428,3 +428,11 @@ def load_obj_mesh(mesh_file, with_normal=False, with_texture=False, with_texture
 		return vertices, faces, norms, face_normals
 
 	return vertices, faces
+
+
+def write_obj_mesh(filename, verts, faces):
+    with open(filename, 'w') as f:
+        for vert in verts:
+            f.write('v %f %f %f\n' % tuple(list(vert)))
+        for face in faces+1:
+            f.write('f %d %d %d\n' % tuple(list(face)))
