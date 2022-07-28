@@ -197,12 +197,8 @@ class GeneBodyReader():
         for key in smpl_param.keys():
             if isinstance(smpl_param[key], np.ndarray):
                 smpl_param[key] = torch.from_numpy(smpl_param[key])
-        output = smpl(
-            **smpl_param,
-            return_full_pose=True,
-            use_hands=False,
-            use_feet_keypoints=False,
-        )
+        
+        output = smpl(**smpl_param)
         verts = output['vertices'].numpy().reshape(-1,3) * smpl_scale
 
         # To align with keypoints3d saved in param, use the base keypoints only,
