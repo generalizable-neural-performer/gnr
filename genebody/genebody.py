@@ -203,15 +203,15 @@ class GeneBodyReader():
             use_hands=False,
             use_feet_keypoints=False,
         )
-        verts = output['vertices'].numpy().reshape(-1,3)
+        verts = output['vertices'].numpy().reshape(-1,3) * smpl_scale
 
         # To align with keypoints3d saved in param, use the base keypoints only,
         # if you want to use the full keypoints3d with extra joints and landmarks,
         # please refer the the definition of joints in
         # vertex_joint_selector.py and landmarks in vertices2landmarks in lbs.py
-        keypoints3d = output['joints'].numpy().reshape(-1,3)[:55]
+        keypoints3d = output['joints'].numpy().reshape(-1,3)[:55] * smpl_scale
         
-        return verts*smpl_scale, smpl.faces, keypoints3d*smpl_scale
+        return verts, smpl.faces, keypoints3d
 
 
 if __name__ == "__main__":
