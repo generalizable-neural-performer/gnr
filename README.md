@@ -10,6 +10,7 @@
 **[[Demo Video]](https://www.youtube.com/watch?v=2COR4u1ZIuk)** | **[[Project Page]](https://generalizable-neural-performer.github.io/)** | **[[Data]](https://generalizable-neural-performer.github.io/genebody.html)** | **[[Paper]](https://arxiv.org/pdf/2204.11798.pdf)**
 
 ## Updates
+- [29/07/2022] GeneBody can be downloaded from [OpenDataLab](https://opendatalab.com/GeneBody).
 - [11/07/2022] Code is released.
 - [02/05/2022] GeneBody Train40 is released! Apply [here](./docs/Dataset.md#train40)! 
 - [29/04/2022] SMPLx fitting toolbox and benchmarks are released!
@@ -36,7 +37,7 @@ Download the pre-trained model, if it raises a gdown failure, try to download th
 ```
 bash scripts/download_model.sh
 ```
-To render per-view depth image of GeneBody dataset
+To render per-view depth image of GeneBody dataset, or you can download the off-the-shelf depth data from [OneDrive](https://hkustconnect-my.sharepoint.com/:u:/g/personal/wchengad_connect_ust_hk/EVenqvQF9lNLvEG6MUJdug8BWsdfJqnl6T8WkMAqzdWxcw?e=thksQZ) or [OpenDataLab](https://opendatalab.com/GeneBody/download).
 ```
 bash scripts/render_smpl_depth.sh ${GENEBODY_ROOT}
 ```
