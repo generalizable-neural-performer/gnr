@@ -21,12 +21,10 @@ class MeshGridSearcher:
         self.minmax = torch.cat([_min_step, _max])
 
         self.tri_num = torch.zeros(self.num[-1], dtype=torch.int32).to(verts.device)
-        self.tri_idx = torch.zeros(1, dtype=torch.int32).to(verts.device)
-
-        insert_grid_surface(self.verts, 
+        self.tri_idx = insert_grid_surface(self.verts, 
                             self.faces, 
                             self.minmax, self.num, self.step,
-                            self.tri_num, self.tri_idx)
+                            self.tri_num)
     
     def nearest_points(self, points):
         points = points.to(self.verts.device)
