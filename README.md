@@ -10,7 +10,7 @@
 **[[Demo Video]](https://www.youtube.com/watch?v=2COR4u1ZIuk)** | **[[Project Page]](https://generalizable-neural-performer.github.io/)** | **[[Data]](https://generalizable-neural-performer.github.io/genebody.html)** | **[[Paper]](https://arxiv.org/pdf/2204.11798.pdf)**
 
 ## Updates
-- [01/09/2022] Open source contributer can be founded [here](https://github.com/openxrlab/xrnerf). 
+- [01/09/2022] We also recommend the implementation of our work in the [OpenXRLab](https://github.com/openxrlab/xrnerf). 
 - [01/09/2022] :exclamation: GeneBody has been reframed. For users have downloaded GeneBody before `2022.09.01` please update the latest data using our more user-friendly download tool.
 - [29/07/2022] GeneBody can be downloaded from [OpenDataLab](https://opendatalab.com/GeneBody).
 - [11/07/2022] Code is released.
