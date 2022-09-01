@@ -29,4 +29,4 @@ Please send the completed form to Wei Cheng (wchengad(at)connect.ust.hk) and cc 
 
 ### Extended370
 
-Coming Soon (before 2022.6.1)
+Coming Soon in OpenDataLab.

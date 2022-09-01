@@ -10,6 +10,8 @@
 **[[Demo Video]](https://www.youtube.com/watch?v=2COR4u1ZIuk)** | **[[Project Page]](https://generalizable-neural-performer.github.io/)** | **[[Data]](https://generalizable-neural-performer.github.io/genebody.html)** | **[[Paper]](https://arxiv.org/pdf/2204.11798.pdf)**
 
 ## Updates
+- [01/09/2022] GNR has been reimplemented in the framework of [openxrlab/xrnerf](https://github.com/openxrlab/xrnerf). 
+- [01/09/2022] :exclamation: GeneBody has been reframed. For users have downloaded GeneBody before `2022.09.01` please update the latest data using our more user-friendly download tool.
 - [29/07/2022] GeneBody can be downloaded from [OpenDataLab](https://opendatalab.com/GeneBody).
 - [11/07/2022] Code is released.
 - [02/05/2022] GeneBody Train40 is released! Apply [here](./docs/Dataset.md#train40)! 
@@ -18,7 +20,11 @@
 - [24/04/2022] The codebase and project page are created.
 
 ## Data Download
-To download and use the GeneBody dataset set, please read the instructions in [Dataset.md](./docs/Dataset.md).
+To download and use the GeneBody dataset set, please frist read the instructions in [Dataset.md](./docs/Dataset.md). We provide a download tool to download and update the GeneBody data including dataset and pretrained models (if there is any future adjustment), for example
+```
+python genebody/download_tool.py --genebody_root ${GENEBODY_ROOT} --subset train40 test10 pretrained_models smpl_depth
+```
+The tool will fetch and download the subsets you selected and put the data in `${GENEBODY_ROOT}`.
 
 ## Annotations
 GeneBody provides the per-view per-frame segmentation, using [BackgroundMatting-V2](https://github.com/PeterL1n/BackgroundMattingV2), and register the fitted [SMPLx](https://github.com/PeterL1n/BackgroundMattingV2) using our enhanced multi-view smplify repo in [here](https://github.com/generalizable-neural-performer/bodyfitting).
@@ -33,15 +39,8 @@ conda env create -f environment.yml
 conda activate gnr
 cd lib/mesh_grid && python setup.py install
 ```
-Download the pre-trained model, if it raises a gdown failure, try to download the zip file from your browser from [GoogleDrive](https://drive.google.com/file/d/17kVOpH4Hud-ZxKlvj0vbKB5dkIxwoHHm/view?usp=sharing) or [OneDrive](https://hkustconnect-my.sharepoint.com/:u:/g/personal/wchengad_connect_ust_hk/EXeGejAW0y9HoUz_TxNJk80BIb3nCQXITZld-fGOoxhm8Q?e=cFcx7r).
-```
-bash scripts/download_model.sh
-```
-To render per-view depth image of GeneBody dataset, or you can download the off-the-shelf depth data from [OneDrive](https://hkustconnect-my.sharepoint.com/:u:/g/personal/wchengad_connect_ust_hk/EVenqvQF9lNLvEG6MUJdug8BWsdfJqnl6T8WkMAqzdWxcw?e=thksQZ) or [OpenDataLab](https://opendatalab.com/GeneBody/download).
-```
-bash scripts/render_smpl_depth.sh ${GENEBODY_ROOT}
-```
-To run GNR
+
+To run GNR on genebody
 ```
 python apps/run_genebody.py --config configs/[train, test, render].txt --dataroot ${GENEBODY_ROOT}
 ```

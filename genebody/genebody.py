@@ -1,9 +1,9 @@
 import os, sys
 import numpy as np 
 import cv2, imageio
-from mesh import load_ply, load_obj_mesh, write_obj_mesh
+from .mesh import load_ply, load_obj_mesh, write_obj_mesh
 import torch
-from gender import genebody_gender
+from .gender import genebody_gender
 
 def image_cropping(mask, padding=0.1):
     """
@@ -70,6 +70,7 @@ class GeneBodyReader():
         # the default seting of GNR is to use these four source views of GeneBody
         self.sourceviews = ['01', '13', '25', '37']
         self.gender = genebody_gender
+        self.rawsize = (2448, 2048)
 
     def get_views(self, subject):
         """
@@ -92,29 +93,27 @@ class GeneBodyReader():
     def get_frames(self, subject):
         frame_list = []
         frame_list = os.listdir(os.path.join(self.rootdir, subject, 'image', '00'))
-        frame_list = sorted(frame_list)
+        frame_list = sorted([frame[:-4] for frame in frame_list])
         return frame_list
 
     def get_cameras(self, subject):
         return np.load(os.path.join(self.rootdir, subject, 'annots.npy'), allow_pickle=True).item()['cams']
 
-    def get_smpl(self, subject, frame_list, frame_id):
+    def get_smpl(self, subject, frame):
         """
         Returns the smpl vertices and faces
-        frame_list: all frames of the subject <- self.get_frames(subject)
-        frame_id: [0-149]
+        frame: all frames of the subject <- self.get_frames(subject)
         """
-        smpl_path = os.path.join(self.rootdir, subject, 'smpl', frame_list[frame_id][:-4]+'.obj')
+        smpl_path = os.path.join(self.rootdir, subject, 'smpl', frame+'.obj')
         vert, face = load_obj_mesh(smpl_path)
         return vert, face
 
-    def get_smpl_param(self, subject, frame_list, frame_id):
+    def get_smpl_param(self, subject, frame):
         """
         Returns the smpl parameters and smpl scale
         frame_list: all frames of the subject <- self.get_frames(subject)
-        frame_id: [0-149]
         """
-        param_path = os.path.join(self.rootdir, subject, 'param', frame_list[frame_id][:-4]+'.npy')
+        param_path = os.path.join(self.rootdir, subject, 'param', frame+'.npy')
         # global_orient and pose are Rodrigues rotation vector
         param = np.load(param_path, allow_pickle=True).item()
 
@@ -131,11 +130,11 @@ class GeneBodyReader():
 
         return smpl_param, smpl_scale
 
-    def get_data(self, subject, frame_list, all_views, camera_params, frame_id, views):
+    def get_data(self, subject, frame, camera_params, views):
         """
         Fetch one frame of multiview data from database with cropping
         subject: name of subject
-        frame_list: all frames of the subject <- self.get_frames(subject)
+        frame: frame of the subject <- self.get_frames(subject)[frameid]
         all_views: all views of subject <- self.get_views(subject)
         camera_params: camera parameters <- self.get_annot(subject)
         frame_id: eg. 1
@@ -146,11 +145,11 @@ class GeneBodyReader():
         
         Ks, c2ws, Ds, images, masks = [], [], [], [], []
         for view in views:
-            img = imageio.imread(os.path.join(subject_dir, 'image', view, frame_list[frame_id]))
-            msk = imageio.imread(os.path.join(subject_dir, 'mask', view, f'mask{frame_list[frame_id][:-4]}.png'))
+            img = imageio.imread(os.path.join(subject_dir, 'image', view, frame+'.jpg'))
+            msk = imageio.imread(os.path.join(subject_dir, 'mask', view, f'mask{frame}.png'))
             # crop the human out from raw image            
             top, left, bottom, right = image_cropping(msk)
-            img = img * (msk > 128)[...,None]
+            img = img * (msk > 128).astype(np.uint8)[...,None]
             # resize to uniform resolution
             img = cv2.resize(img[top:bottom, left:right].copy(), (self.loadsize, self.loadsize), cv2.INTER_CUBIC)
             images.append(img)
@@ -167,7 +166,7 @@ class GeneBodyReader():
             Ks.append(K)
             c2ws.append(c2w)
             Ds.append(D)
-
+        
         return images, masks, Ks, c2ws, Ds
 
     def get_near_far(self, verts, c2w, pad=0.5):
@@ -199,15 +198,15 @@ class GeneBodyReader():
                 smpl_param[key] = torch.from_numpy(smpl_param[key])
         
         output = smpl(**smpl_param)
-        verts = output['vertices'].numpy().reshape(-1,3) * smpl_scale
+        verts = output['vertices'].numpy().reshape(-1,3)
 
         # To align with keypoints3d saved in param, use the base keypoints only,
         # if you want to use the full keypoints3d with extra joints and landmarks,
         # please refer the the definition of joints in
         # vertex_joint_selector.py and landmarks in vertices2landmarks in lbs.py
-        keypoints3d = output['joints'].numpy().reshape(-1,3)[:55] * smpl_scale
+        keypoints3d = output['joints'].numpy().reshape(-1,3)[:55]
         
-        return verts, smpl.faces, keypoints3d
+        return verts*smpl_scale, smpl.faces, keypoints3d*smpl_scale
 
 
 if __name__ == "__main__":
@@ -222,12 +221,13 @@ if __name__ == "__main__":
     views = genebody.get_views(subject)
     frames = genebody.get_frames(subject)
     camera_params = genebody.get_cameras(subject)
+    frame = frames[9]
 
-    imgs, msks, Ks, c2ws, Ds = genebody.get_data(subject, frames, views, camera_params, 0, genebody.sourceviews)
+    imgs, msks, Ks, c2ws, Ds = genebody.get_data(subject, frame, camera_params, genebody.sourceviews)
     print(f'loaded {len(imgs)} frames of images and masks in size of ', list(imgs[0].shape))
 
-    verts, faces = genebody.get_smpl(subject, frames, 0)
-    smpl_param, smpl_scale = genebody.get_smpl_param(subject, frames, 0)
+    verts, faces = genebody.get_smpl(subject, frame)
+    smpl_param, smpl_scale = genebody.get_smpl_param(subject, frame)
     print('mesh with size ', verts.shape, ' body scale ', smpl_scale)
 
     near, far = genebody.get_near_far(verts, c2ws[0])
@@ -241,6 +241,7 @@ if __name__ == "__main__":
         verts_from_param, faces_from_param, kpts_from_param = genebody.smpl_from_param(smplx_path, subject, smpl_param, smpl_scale)
         print('average error of parameter generated smplx is ', np.abs(verts_from_param-verts).mean())
         print('average error of parameter generated keypoints is ', np.abs(smpl_param['keypoints3d'].reshape(-1,3)-kpts_from_param).mean())
+        print(verts.min(0), verts.max(0), kpts_from_param.min(0), kpts_from_param.max(0))
         smpl_mesh = trimesh.Trimesh(verts_from_param, faces_from_param)
         smpl_mesh.export(f'{subject}.obj')
 

@@ -1,3 +1,4 @@
+from re import sub
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
@@ -7,14 +8,16 @@ import cv2
 import sys
 import os
 import imageio
+from ..mesh_util import save_obj_mesh
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(base_dir,'..'))
+sys.path = sys.path[:-1]
 # import trimesh
 from lib.ply_util import load_ply
 from genebody.mesh import load_obj_mesh
 import scipy.interpolate as interpolater
 import random
-from scipy.optimize import minimize
+from genebody.gender import genebody_gender
 
 def mask_padding(mask, border = 5):
     kernel = np.ones((border, border), np.uint8)
@@ -96,10 +99,10 @@ class GeneBodyDataset(Dataset):
 
         self.num_views = self.opt.num_views
         self.input_views = [1,13,25,37]
-        self.test_views = sorted(list(range(0,48)))
+        self.test_views = sorted(list(range(48)))
         # self.sequences = self.opt.ghr_seq if phase == 'train' else self.opt.ghr_test_seq
         self.split = np.load(os.path.join(self.root, 'genebody_split.npy'), allow_pickle=True).item()
-        self.sequences = self.split['train'] if self.is_train else self.split['test']
+        self.sequences = self.split['train'] if self.is_train else ['natacha']#self.split['test']
         self.frames, self.cam_names, self.subjects, self.frames_id = self.get_frames()
         self.load_smpl_param = any([self.opt.use_smpl_sdf, self.opt.use_t_pose])
         self.load_smpl_mesh = any([self.opt.use_smpl_sdf, self.opt.use_t_pose])
@@ -209,20 +212,20 @@ class GeneBodyDataset(Dataset):
         near, far = near-(far-near)/2, far+(far-near)/2
         return near, far
 
-    def get_realworld_scale(self, smpl_verts, bbox, w2c, K):
-        smpl_min, smpl_max = smpl_verts.min(0), smpl_verts.max(0)
-        # reprojected smpl verts
-        vp = smpl_verts.dot(w2c[:3,:3].T) + w2c[:3,3:].T
-        vp = vp.dot(K.T)
-        vp = vp[:,:2] / (vp[:,2:]+1e-8)
-        vmin, vmax = vp.min(0), vp.max(0)
+    # def get_realworld_scale(self, smpl_verts, bbox, w2c, K):
+    #     smpl_min, smpl_max = smpl_verts.min(0), smpl_verts.max(0)
+    #     # reprojected smpl verts
+    #     vp = smpl_verts.dot(w2c[:3,:3].T) + w2c[:3,3:].T
+    #     vp = vp.dot(K.T)
+    #     vp = vp[:,:2] / (vp[:,2:]+1e-8)
+    #     vmin, vmax = vp.min(0), vp.max(0)
         
-        # compare with bounding box
-        bbox_h = bbox[1][0] - bbox[0][0]
-        bbox_w = bbox[1][1] - bbox[0][1]
-        long_axis = bbox_h/(vmax[1]-vmin[1])*(smpl_max[1]-smpl_min[1]) if bbox_h > bbox_w else bbox_w/(vmax[0]-vmin[0])*(smpl_max[0]-smpl_min[0])
-        spatial_freq = 180/long_axis/0.5
-        return spatial_freq
+    #     # compare with bounding box
+    #     bbox_h = bbox[1][0] - bbox[0][0]
+    #     bbox_w = bbox[1][1] - bbox[0][1]
+    #     long_axis = bbox_h/(vmax[1]-vmin[1])*(smpl_max[1]-smpl_min[1]) if bbox_h > bbox_w else bbox_w/(vmax[0]-vmin[0])*(smpl_max[0]-smpl_min[0])
+    #     spatial_freq = 180/long_axis/0.5
+    #     return spatial_freq
 
     def get_image(self, sid, num_views, view_id=None, random_sample=False, smpl_verts=None):
         frame = self.frames[sid]
@@ -233,7 +236,9 @@ class GeneBodyDataset(Dataset):
         elif (subject == 'dannier' or subject == 'Tichinah_jervier'):
             test_views = list(set(self.test_views)-set([32]))
         elif subject == 'joseph_matanda':
-            test_views = list(set(list(range(48))) - set([39, 40, 42, 43, 44, 45, 46, 47]))
+            test_views = list(set(self.test_views) - set([39, 40, 42, 43, 44, 45, 46, 47]))
+        elif subject in ['anastasia', 'aosilan']:
+            test_views = list(set(self.test_views) - set(range(16,24)))
         else:
             test_views = self.test_views
         test_views = sorted(test_views)
@@ -326,10 +331,10 @@ class GeneBodyDataset(Dataset):
             # determine near far plane from smpl estimation
             near, far = self.get_near_far(smpl_verts, w2c)
 
-            # determine valid body part from smpl and bounding box
-            if i < self.num_views:
-                spatial_freq = self.get_realworld_scale(smpl_verts, bbox, w2c, K)
-                spatial_freqs.append(spatial_freq)
+            # # determine valid body part from smpl and bounding box
+            # if i < self.num_views:
+            #     spatial_freq = self.get_realworld_scale(smpl_verts, bbox, w2c, K)
+            #     spatial_freqs.append(spatial_freq)
 
             calib = torch.Tensor([K[0,0],K[1,1],K[0,2],K[1,2]]+list(dist.reshape(-1))+[near,far]).float()
             extrinsic = torch.from_numpy(w2c)
@@ -346,7 +351,7 @@ class GeneBodyDataset(Dataset):
                 np.array([1, np.sqrt(2)])).astype(np.int32)
         bbox = np.array([centroid - bbox, centroid + bbox]).T
         bbox = np.clip(bbox.reshape(-1), 0, self.load_size)
-        spatial_freq = min(spatial_freqs)
+        # spatial_freq = min(spatial_freqs)
 
         if self.is_render:
             # render free view point video on full image resolution 
@@ -375,16 +380,39 @@ class GeneBodyDataset(Dataset):
             'render_gt': torch.stack(gt_list, dim = 0) if not self.is_train and self.move_cam is 0 else [],
             'smpl_depth': torch.stack(smpl_depth_list[:self.num_views], dim=0) if self.opt.use_smpl_depth else [],
             'img_i': view_ids,
-            'spatial_freq': spatial_freq,
+            # 'body_scale': spatial_freq,
             'center': torch.from_numpy((smpl_verts.max(0)+smpl_verts.min(0))/2),
         }
+
+    def smpl_from_param(self, model_path, subject, smpl_param, smpl_scale):
+        import smplx
+        smpl = smplx.SMPLX(
+            model_path=model_path,
+            gender='NEUTRAL',#genebody_gender[subject],
+            use_pca=False,
+        )
+        smpl_param = smpl_param.copy()
+        for key in smpl_param.keys():
+            if isinstance(smpl_param[key], np.ndarray):
+                smpl_param[key] = torch.from_numpy(smpl_param[key])
+        
+        output = smpl(**smpl_param)
+        verts = output['vertices'].numpy().reshape(-1,3)
+
+        # To align with keypoints3d saved in param, use the base keypoints only,
+        # if you want to use the full keypoints3d with extra joints and landmarks,
+        # please refer the the definition of joints in
+        # vertex_joint_selector.py and landmarks in vertices2landmarks in lbs.py
+        keypoints3d = output['joints'].numpy().reshape(-1,3)[:55]
+        
+        return verts*smpl_scale, smpl.faces, keypoints3d*smpl_scale
 
     def get_item(self, index):
         sid = index % len(self.frames)
         vid =(index // len(self.frames)) % len(self.test_views)
         frame = self.frames[sid]
         subject = self.subjects[sid]
-
+        old = 'old' if os.path.exists(os.path.join(self.root, subject, 'oldsmpl')) else ''
         res = {
             'name': subject+'_'+frame+'_'+str(vid),
             'mesh_path': os.path.join(self.root, subject, 'smpl', '%d.ply' % sid),
@@ -393,14 +421,22 @@ class GeneBodyDataset(Dataset):
         }
 
         # load smpl data
-        param_dir = os.path.join(self.root, subject, f'param')
+        param_dir = os.path.join(self.root, subject, f'{old}param')
         param_path = [os.path.join(param_dir,f) for f in os.listdir(param_dir) if frame in f]
-        param = np.load(os.path.join(param_path[0]), allow_pickle=True).item()['smplx']
+        param = np.load(os.path.join(param_path[0]), allow_pickle=True).item()
+        scale, param = param['smplx_scale'], param['smplx']
+        res['body_scale'] = scale
         for key in param.keys():
             if isinstance(param[key], torch.Tensor):
                 param[key] = param[key].numpy()
+        # param['jaw_pose'] = np.zeros_like(param['jaw_pose'])
 
-        smpl_dir = os.path.join(self.root, subject, f'smpl')
+        # smplx_model_path = '/home/SENSETIME/chengwei/Projects/bodyfitting_release/data/smplx'
+        # vert, face, kp3d = self.smpl_from_param(smplx_model_path, subject, param, scale)
+
+        smpl_dir = os.path.join(self.root, subject, f'{old}smpl')
+        # os.makedirs(smpl_dir, exist_ok=True)
+        # save_obj_mesh(os.path.join(smpl_dir, frame+'.obj'), vert, face[...,::-1])
         smpl_path = [os.path.join(smpl_dir,f) for f in os.listdir(smpl_dir) if frame in f][0]
         if smpl_path[-4:] == '.obj':
             vert, face = load_obj_mesh(smpl_path)

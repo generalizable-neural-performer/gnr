@@ -46,6 +46,7 @@ class BaseOptions():
         g_exp.add_argument('--regularization', action='store_true', help='use regularization loss')
         g_exp.add_argument('--use_occlusion', action='store_true', help='use occulsion aware')
         g_exp.add_argument('--use_occlusion_net', action='store_true', help='use occulsion aware network')
+        g_exp.add_argument('--train_occlusion', action='store_true', help='train occulsion aware network')
         g_exp.add_argument('--train_shape_skips', type=int, default=2, help='How many skips to train shape.')
         g_exp.add_argument('--move_cam', type=int, default='0', help='move camera for novel view rendering')
         g_exp.add_argument('--use_smpl_sdf', action='store_true', help='use smpl sdf')

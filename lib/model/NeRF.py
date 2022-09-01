@@ -20,6 +20,7 @@ class NeRF(nn.Module):
         self.use_t_pose = opt.use_t_pose
         self.angle_diff = opt.angle_diff
         self.use_occ_net = opt.use_occlusion_net
+        self.train_occ = opt.train_occlusion
 
         self.input_ch_pos_enc = input_ch
         self.input_ch_smpl = 0
@@ -86,8 +87,13 @@ class NeRF(nn.Module):
                                                 nn.Linear(W//4+self.att_embeder.out_dim,W//8), nn.Linear(W//8+self.att_embeder.out_dim,W//16)])
 
         if self.use_occ_net:
-            self.occ_linears = nn.ModuleList([nn.Linear(self.input_ch_smpl + 6 + self.input_ch_feat, W//4), nn.Linear(W//4, W//16),
+            self.occ_linears = nn.ModuleList([nn.Linear(self.input_ch_smpl + 6 + self.input_ch_feat, W//4), 
+                                              nn.Linear(W//4, W//16),
                                               nn.Linear(W//16+self.input_ch_smpl + 6, 1)])
+            if not self.train_occ:
+                for linear in self.occ_linears:
+                    linear.weight.requires_grad_(False)
+                    linear.bias.requires_grad_(False)
 
     def forward(self, x, attdirs=None, alpha_only=False, smpl_vis=None):
         # prepare inputs
@@ -183,9 +189,9 @@ class NeRF(nn.Module):
         return outputs
 
     def weighted_softmax(self, attention, weight):
-        exp_att = torch.exp(attention)
-        exp_att_src = exp_att[:, 1:].clone() * weight
-        exp_att = torch.cat([exp_att[:,:1], exp_att_src], dim=1)
+        exp_att = torch.exp(attention - torch.max(attention, 1, keepdim=True)[0])
+        # exp_att_src = exp_att[:, 1:].clone() * weight
+        exp_att = torch.cat([exp_att[:,:1], exp_att[:, 1:] * weight], dim=1)
         exp_att_sum = torch.sum(exp_att, dim=-1, keepdim=True)
         attention = exp_att / (exp_att_sum + 1e-8)
         return attention

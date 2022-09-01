@@ -93,7 +93,7 @@ class NeRFRenderer:
         if self.angle_diff and self.angle_diff_grad is not None:
             loss.update({'angle_diff': torch.mean(self.angle_diff_grad**2)})
         if self.use_occlusion_net and self.occ is not None and self.occ_gt is not None:
-            loss.update({'occ': self.mse_loss(self.occ, self.occ_gt)})
+            loss.update({'occ': self.mse_loss(self.occ, self.occ_gt)*0.1})
         return loss
 
     def get_rays_orthogonal(self, bbox, calib):
@@ -186,10 +186,10 @@ class NeRFRenderer:
         nerf_input, source_rgb = [], None
 
         # Convert query point to normalized body coordinate (normalized scale and body orientation)
-        center, spatial_freq = mesh_param['center'], mesh_param['spatial_freq']
+        center, body_scale = mesh_param['center'], mesh_param['body_scale']
         if self.use_nml:
             # points normalized to volume [-1,1]^3
-            self.pts_nml = ((pts - center) * spatial_freq / (self.width / 2)).requires_grad_()
+            self.pts_nml = ((pts - center) / body_scale).requires_grad_()
             if self.use_smpl_sdf: self.pts_nml = self.pts_nml @ smpl['rot'][0]  # rotate to smpl volume, with smpl root node facing front
             nerf_input.append(self.pts_nml)
         else:
@@ -210,7 +210,7 @@ class NeRFRenderer:
             if self.use_smpl_sdf:
                 reg_vecs = pts - closest_pts
                 if self.use_nml:
-                    reg_vecs = reg_vecs * spatial_freq / (self.width/2)     # normalized to volume [-1,1]^3
+                    reg_vecs = reg_vecs / body_scale     # normalized to volume [-1,1]^3
                     reg_vecs = reg_vecs @ smpl['rot'][0]                       # rotate to smpl volume, with smpl root node facing front
                 signs = self.mesh_searcher.inside_mesh(pts)
                 self.alpha_smpl = (signs + 1) / 2
@@ -300,10 +300,7 @@ class NeRFRenderer:
         inside, smpl_vis, scan_vis = None, None, None
         if self.use_vh:
             inside, smpl_vis, scan_vis = self.inside_pts_vh(pts, masks, smpl, calibs, persps)
-            try:
-                pts = pts[inside]
-            except:
-                print(inside.sum(), pts.shape)
+            pts = pts[inside]
             if len(pts) == 0:
                 return self.default_rgb([N_rays, self.rgb_ch], dtype=torch.float32, device=ray_batch.device), \
                        torch.zeros([N_rays], dtype=torch.float32, device=ray_batch.device)
@@ -352,8 +349,8 @@ class NeRFRenderer:
         
         norm = torch.norm(rays_e - rays_s, dim=-1, keepdim=True)
         if self.use_nml:
-           center, spatial_freq = mesh_param['center'], mesh_param['spatial_freq']
-           norm = norm * spatial_freq / (self.width/2)
+           center, body_scale = mesh_param['center'], mesh_param['body_scale']
+           norm = norm / body_scale
         rgb_map, weights = self.make_nerf_output(nerf_output, t_vals, norm, source_rgb, is_train=is_train)
         z_vals = t_vals * q_persps[-2]  + (1-t_vals) * q_persps[-1] if persps is not None and q_persps is not None else 2*t_vals - 1
         depth = torch.sum(weights * z_vals, -1)
@@ -381,13 +378,15 @@ class NeRFRenderer:
             inside[idx] = True
         smpl_vis, scan_vis = None, None
         if self.use_occlusion:
-            smpl_depth = index(smpl['depth'], xy, 'nearest').squeeze(1).permute((1,0))[inside]
-            depth = xyz[:,2,:].permute((1,0))[inside]
-            smpl_vis = ((depth - smpl_depth) <= 0) * (smpl_depth > 0)
+            smpl_depth = index(smpl['depth'], xy, 'nearest').squeeze(1).permute((1,0))
+            smpl_depth = smpl_depth[inside]
+            depth = xyz[:,2,:].permute((1,0))
+            depth = depth[inside]
+            smpl_vis = (((depth - smpl_depth) <= 0) * (smpl_depth > 0) + (smpl_depth == 0)) > 0
         if self.use_occlusion_net and 'scan_depth' in smpl.keys():
             scan_depth = index(smpl['scan_depth'], xy, 'nearest').squeeze(1).permute((1,0))[inside]
             depth = xyz[:,2,:].permute((1,0))[inside]
-            scan_vis = ((depth - scan_depth) <= 0) * (scan_depth > 0)
+            scan_vis = (((depth - scan_depth) <= 0) * (scan_depth > 0) + (scan_depth == 0)) > 0
         return inside, smpl_vis, scan_vis
 
 
@@ -483,7 +482,7 @@ class NeRFRenderer:
         Mesh Reconstruction borrowed form PIFu
         """
         # Deterimine 3D bounding box
-        center, spatial_freq = mesh_param['center'].cpu().numpy(), mesh_param['spatial_freq']
+        center, body_scale = mesh_param['center'].cpu().numpy(), mesh_param['body_scale']
         top, bottom, left, right = bbox
         left, right = 0, 512
         bb_min = [left-self.width/2, top-self.height/2, left-self.width/2]
@@ -493,7 +492,7 @@ class NeRFRenderer:
         linspaces = [np.linspace(bb_min[i], bb_max[i], self.N_grid) for i in range(len(bb_min))]
         grids = np.stack(np.meshgrid(linspaces[0], linspaces[1], linspaces[2], indexing='ij'), -1)
         sh = grids.shape
-        pts = grids / spatial_freq + center
+        pts = grids / (self.width/2) * body_scale + center
         recon_kwargs = {
             'feats': feats, 'images': images, 'smpl': smpl, 'calibs': calibs[:self.num_views], 
             'mesh_param': mesh_param, 'persps': persps[:self.num_views] if persps is not None else None
@@ -505,7 +504,7 @@ class NeRFRenderer:
 
         # Convert marching cubes coordinate back to world coordinate
         verts = (verts - self.N_grid/2) / self.N_grid * np.array([[right-left, bottom-top, right-left]])
-        verts = verts / spatial_freq + center
+        verts = verts / (self.width/2) * body_scale + center
         
         # use laplacian smooth if the mesh is noisy
         if self.opt.laplacian > 0:
@@ -613,7 +612,7 @@ class NeRFRenderer:
         x = (countour[:,0].float() - cam[2]) / cam[0]
         y = (countour[:,1].float() - cam[3]) / cam[1]
         near, far = cam[-2], cam[-1]
-        center, spatial_freq = mesh_param['center'], mesh_param['spatial_freq']
+        center, body_scale = mesh_param['center'], mesh_param['body_scale']
         if len(cam) > 6:
             xp, yp = x, y
             for _ in range(3): # iter to undistort
@@ -635,7 +634,7 @@ class NeRFRenderer:
         rays_d = rays_e - rays_s
         rays_d = rays_d / (torch.norm(rays_d, dim=-1, keepdim=True) + 1e-8)
         if self.use_nml:
-            rays_s = (rays_s - center) * spatial_freq / (self.width / 2)
+            rays_s = (rays_s - center) / body_scale
         return rays_d, torch.cross(rays_s, rays_d, dim=-1)
 
     def warp_mat(self, face_verts):

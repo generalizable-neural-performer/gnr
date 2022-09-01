@@ -33,7 +33,7 @@ def psnr(x, gt):
         # [0, 255]
         x = x / 255
         gt = gt / 255
-    elif torch.min(gt) < -1:
+    elif torch.min(gt) < -0.5:
         # [0, 1]
         x = (x+1)/2
         gt = (gt+1)/2

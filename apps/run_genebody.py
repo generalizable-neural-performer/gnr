@@ -2,6 +2,7 @@ import sys
 import os
 ROOT_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path = sys.path[:-1]
 import time
 import json
 import numpy as np
@@ -53,7 +54,7 @@ def prepare_data(opt, data, local_rank=0):
     mask_tensor = data['mask'][0].to(device=local_rank)
     bbox = list(data['bbox'][0].numpy().astype(np.int32))
     mesh_param = {'center': data['center'][0].to(device=local_rank), 
-                    'spatial_freq': data['spatial_freq'][0].cpu().numpy().item()}
+                    'body_scale': data['body_scale'][0].cpu().numpy().item()}
     if opt.train_shape:
         mesh_param['samples'] = data['samples'][0].to(device=local_rank)
         mesh_param['labels'] = data['labels'][0].to(device=local_rank)
@@ -136,8 +137,19 @@ def train(opt, rank=0, local_rank = 0):
     global_step = start_epoch * len(train_dataset)
 
     lr = opt.lrate * (0.1 ** (start_epoch / opt.lrate_decay))
-    params = net.parameters() if opt.train_encoder else net.module.nerf.parameters()
-    optimizer = torch.optim.Adam(params=params, lr=lr, betas=(0.9, 0.999))
+    # params = net.parameters() if opt.train_encoder else net.module.nerf.parameters()
+    params_list = []
+    for name, param in net.named_parameters():
+        if 'occ_linears' in name:
+            if opt.train_occlusion:
+                params_list.append(param)
+        elif 'image_filter' in name:
+            if opt.train_encoder:
+                params_list.append(param)
+        else:
+            params_list.append(param)
+
+    optimizer = torch.optim.Adam(params=params_list, lr=lr, betas=(0.9, 0.999))
 
     is_summary = not opt.ddp or (opt.ddp and (rank == 0))
     if is_summary:
@@ -154,7 +166,8 @@ def train(opt, rank=0, local_rank = 0):
         trange = range
 
     # evaluate, not demo
-    metrics_dict = {'lpips': [], 'psnr': [], 'ssim': []}
+    # metrics_dict = {'lpips': [], 'psnr': [], 'ssim': []}
+    metrics_dict = {}
     metrics = {'lpips': metrics_torch.LPIPS().to(local_rank), 'psnr': metrics_torch.psnr, 'ssim': metrics_torch.SSIM().to(local_rank)}
     
     # training
@@ -180,7 +193,7 @@ def train(opt, rank=0, local_rank = 0):
                 try:
                     loss.backward()
                 except:
-                    print(train_data['name'], train_data['sid'], train_data['vid'])
+                    print(train_data['name'], train_data['sid'], train_data['vid'], flush=True)
                 optimizer.step()
 
                 if global_step % opt.freq_plot == 0 and is_summary:
@@ -217,7 +230,8 @@ def train(opt, rank=0, local_rank = 0):
                 test_data = next(test_data_iter)
                 data = prepare_data(opt, test_data, local_rank)
                 name = test_data['name'][0]
-                # fid = test_data['fid'][0]
+                subject = name.split('_')[0]
+                 # fid = test_data['fid'][0]
                 fid = test_data['sid'][0]
                 vid = test_data['vid'][0]
                 render_gt = test_data['render_gt'][0].to(local_rank)
@@ -243,10 +257,13 @@ def train(opt, rank=0, local_rank = 0):
                 else:
                     att_rgbs = rgbs[..., :3]
                 m_dict = cal_metrics(metrics, att_rgbs, render_gt)
+                
+                if subject not in metrics_dict.keys():
+                    metrics_dict[subject] = {'lpips': [], 'psnr': [], 'ssim': []}
                 for key, value in m_dict.items():
-                    if opt.ddp:
-                        value = sampler.distributed_concat(value, total_len) if opt.ddp else value
-                    metrics_dict[key].append(torch.mean(value).cpu().numpy())
+                    # if opt.ddp:
+                    #     value = sampler.distributed_concat(value, total_len) if opt.ddp else value
+                    metrics_dict[subject][key].append(torch.mean(value).cpu().numpy())
 
                 att_rgbs = [to8b(att_rgb) for att_rgb in att_rgbs.cpu().numpy()]
                 render_gt = [to8b(gt) for gt in render_gt.permute(0,2,3,1).cpu().numpy()]
@@ -258,13 +275,12 @@ def train(opt, rank=0, local_rank = 0):
 
                     fname = os.path.join(opt.basedir, opt.name, opt.eval_dir, 'eval.txt')
                     with open(fname, 'a') as file_:
-                        len_ = len(render_gt)
                         print_write(file_, '******\n%s\n' % (name))
-                        for k, v in metrics_dict.items():
-                            print_write(file_, '%s: %.5f\n'%(k, np.mean(v[-idx-1:])))
+                        for k, v in metrics_dict[subject].items():
+                            print_write(file_, '%s: %.5f\n'%(k, v[-1]))
                         file_.write('------')
-                        for k, v in metrics_dict.items():
-                            print_write(file_, '[total] %s: %.5f\n'%(k, np.mean(v)))
+                        for k, v in metrics_dict[subject].items():
+                            print_write(file_, '[total] %s: %.5f\n'%(k, sum(v)/len(v)))
 
                 if opt.output_mesh:
                     verts, faces, rgbs = net.module.reconstruct(data)

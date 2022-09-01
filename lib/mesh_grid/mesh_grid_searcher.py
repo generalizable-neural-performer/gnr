@@ -21,12 +21,10 @@ class MeshGridSearcher:
         self.minmax = torch.cat([_min_step, _max])
 
         self.tri_num = torch.zeros(self.num[-1], dtype=torch.int32).to(verts.device)
-        self.tri_idx = torch.zeros(1, dtype=torch.int32).to(verts.device)
-
-        insert_grid_surface(self.verts, 
+        self.tri_idx = insert_grid_surface(self.verts, 
                             self.faces, 
                             self.minmax, self.num, self.step,
-                            self.tri_num, self.tri_idx)
+                            self.tri_num)
     
     def nearest_points(self, points):
         points = points.to(self.verts.device)
@@ -36,6 +34,18 @@ class MeshGridSearcher:
         search_nearest_point(points, self.verts, self.faces, self.tri_num,
                                     self.tri_idx, self.num, self.minmax, self.step,
                                     nearest_faces, nearest_pts, coeff)
+        if torch.isnan(nearest_pts).sum() > 0:
+            with open('mesh_grid_internal.txt', 'w') as f:
+                f.write(f'verts {torch.isnan(self.verts).sum().item()}\n')
+                f.write(f'faces {torch.isnan(self.faces).sum().item()}\n')
+                f.write(f'tri_num {torch.isnan(self.tri_num).sum().item()}\n')
+                f.write(f'tri_idx {torch.isnan(self.tri_idx).sum().item()}\n')
+                f.write(f'num {torch.isnan(self.num).sum().item()}\n')
+                f.write(f'minmax {torch.isnan(self.minmax).sum().item()}\n')
+                f.write(f'step {torch.isnan(self.step).sum().item()}\n')
+                f.write(f'nearest_faces {torch.isnan(nearest_faces).sum().item()}\n')
+                f.write(f'coeff {torch.isnan(coeff).sum().item()}\n')
+            nearest_pts[torch.isnan(nearest_pts)] = 0
         return nearest_pts, nearest_faces
 
     def inside_mesh(self, points):

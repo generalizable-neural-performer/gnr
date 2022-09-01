@@ -140,8 +140,8 @@ __global__ void insert_grid_surface_kernel(
         index ind = 0, k = j;
         for(unsigned char d = 0; d < dim; ++d) {
             if(d > 0) ind *= num[d];
-            ind += bbox[d] + k % (bbox[d+dim] - bbox[d]);
-            k /= (bbox[d+dim] - bbox[d]);
+            ind += (bbox[d] + k % (bbox[d+dim] - bbox[d]));
+            k /= (bbox[d+dim] - bbox[d] + 1e-8);
         }
         if(surf_idx == NULL)
             // ++surf_num[ind];
@@ -178,14 +178,13 @@ void print_tensor(at::Tensor tensor){
     std::cout << std::endl;
 }
 
-void insert_grid_surface_cuda(
+at::Tensor insert_grid_surface_cuda(
     at::Tensor verts,
     at::Tensor faces,
     at::Tensor minmax,
     at::Tensor num,
     float step,
-    at::Tensor tri_num,
-	at::Tensor tri_idx
+    at::Tensor tri_num
 ) {
     if(faces.sizes().size() != 2) faces = faces.reshape({-1,3});
 	const int32_t num_faces = faces.size(0);
@@ -215,8 +214,9 @@ void insert_grid_surface_cuda(
 
     // make buffer
     const int32_t size = tri_num[-1].item<int32_t>();
-    tri_idx.resize_({size});
-    tri_idx.zero_();
+    // tri_idx.resize_({size});
+    // tri_idx.zero_();
+	at::Tensor tri_idx = at::zeros({size}, tri_num.options());
     AT_DISPATCH_FLOATING_TYPES(verts.type(), "insert_grid_surface_cuda2", ([&] {
         insert_grid_surface_kernel<scalar_t, int32_t, 3><<<blocks, threads>>>(
             verts.data<scalar_t>(),
@@ -233,6 +233,8 @@ void insert_grid_surface_cuda(
     err = cudaGetLastError();
     if (err != cudaSuccess) 
             printf("Error in second insert_grid_surface_cuda: %s\n", cudaGetErrorString(err));
+
+	return tri_idx;
     
 }
 
@@ -317,6 +319,13 @@ __global__ void search_nearest_point_kenerel(
 						}
 					}
 					dist2 = search_nearest_proj<scalar_t>(patch, _coeff);
+					for(unsigned char d = 0; d < dim; ++d){
+						if(isnan(_coeff[d])){
+							for(unsigned char dd = 0; dd < dim; ++dd){
+								_coeff[dd] = 1./3.;
+							}
+						}
+					}
 // printf("%d: %f %f %f\n", (int)threadIdx.x, _coeff[0], _coeff[1], _coeff[2]);
 					if(dis2 < 0 || dist2 < dis2) {
 						if(coeff != NULL) {
@@ -372,12 +381,12 @@ void search_nearest_point_cuda (
     const dim3 blocks (points_num / threads + 1, 1, 1);
 
     // make output
-    near_faces.resize_({points_num});
-	near_faces.zero_();
-    near_pts.resize_({points_num, 3});
-    near_pts.zero_();
-    coeff.resize_({points_num, 3});
-    coeff.zero_();
+    // near_faces.resize_({points_num});
+	// near_faces.zero_();
+    // near_pts.resize_({points_num, 3});
+    // near_pts.zero_();
+    // coeff.resize_({points_num, 3});
+    // coeff.zero_();
 
     AT_DISPATCH_FLOATING_TYPES(verts.type(), "search_nearest_point_cuda", ([&] {
         search_nearest_point_kenerel<scalar_t, int32_t, 3><<<blocks, threads>>>(
@@ -603,8 +612,8 @@ void search_inside_mesh_cuda (
 	const dim3 blocks (points_num / threads + 1, 1, 1);
 
     // make output
-    signs.resize_({points_num});
-	signs.zero_();
+    // signs.resize_({points_num});
+	// signs.zero_();
 
     AT_DISPATCH_FLOATING_TYPES(verts.type(), "search_inside_mesh_cuda", ([&] {
 		search_inside_mesh_kernel<scalar_t, int32_t, 3><<<blocks, threads>>>(
@@ -1195,8 +1204,8 @@ void search_intersect_cuda (
 	const dim3 blocks (points_num / threads + 1, 1, 1);
 
 	// make output
-	intersect.resize_({points_num});
-	intersect.zero_();
+	// intersect.resize_({points_num});
+	// intersect.zero_();
 
 	AT_DISPATCH_FLOATING_TYPES(verts.type(), "search_intersect_cuda", ([&] {
 		search_ray_grid_kernel<scalar_t, int32_t, 3><<<blocks, threads>>>(

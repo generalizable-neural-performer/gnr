@@ -1,10 +1,10 @@
 #include <torch/torch.h>
 
 
-void insert_grid_surface_cuda(
+at::Tensor insert_grid_surface_cuda(
     at::Tensor verts, at::Tensor faces,
     at::Tensor minmax, at::Tensor num, float step,
-    at::Tensor tri_num, at::Tensor tri_idx
+    at::Tensor tri_num
 );
 
 void search_nearest_point_cuda (
@@ -29,19 +29,18 @@ void search_intersect_cuda (
 #define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x " must be a CUDA tensor")
 
 
-void insert_grid_surface(
+at::Tensor insert_grid_surface(
     at::Tensor verts, at::Tensor faces,
     at::Tensor minmax, at::Tensor num, float step,
-    at::Tensor tri_num, at::Tensor tri_idx
+    at::Tensor tri_num
 ) {
     CHECK_CUDA(verts);
     CHECK_CUDA(faces);
     CHECK_CUDA(minmax);
     CHECK_CUDA(num);
     CHECK_CUDA(tri_num);
-    CHECK_CUDA(tri_idx);
 
-    insert_grid_surface_cuda(verts, faces, minmax, num, step, tri_num, tri_idx);
+    return insert_grid_surface_cuda(verts, faces, minmax, num, step, tri_num);
 }
 
 void search_nearest_point(

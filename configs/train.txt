@@ -27,14 +27,14 @@ use_occlusion_net = True
 # Ray Sampling
 use_vh = True
 N_rand = 1024
-N_rand_infer = 4096
+N_rand_infer = 4096	# decrease the batch size if there is an out-of-memory error
 N_samples = 256
 chunk = 524288
 vh_overhead = 1
 
 # Trianing
 ddp = False
-train_encoder = False
+train_encoder = True
 projection_mode = perspective
 
 # Evaluation
@@ -44,6 +44,6 @@ eval_skip = 15
 move_cam = 1
 
 # Reconstruction
-N_grid = 512
+N_grid = 512		# decrease the grid size if there is an out-of-memory error
 laplacian = 5
 
