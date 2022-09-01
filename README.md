@@ -10,7 +10,6 @@
 **[[Demo Video]](https://www.youtube.com/watch?v=2COR4u1ZIuk)** | **[[Project Page]](https://generalizable-neural-performer.github.io/)** | **[[Data]](https://generalizable-neural-performer.github.io/genebody.html)** | **[[Paper]](https://arxiv.org/pdf/2204.11798.pdf)**
 
 ## Updates
-- [01/09/2022] GNR has been reimplemented in the framework of [openxrlab/xrnerf](https://github.com/openxrlab/xrnerf). 
 - [01/09/2022] :exclamation: GeneBody has been reframed. For users have downloaded GeneBody before `2022.09.01` please update the latest data using our more user-friendly download tool.
 - [29/07/2022] GeneBody can be downloaded from [OpenDataLab](https://opendatalab.com/GeneBody).
 - [11/07/2022] Code is released.
@@ -74,6 +73,10 @@ And `cd benchmarks/`, the released benchmarks are ready to go on Genebody and ot
 | :--- | :---------------:|:---------------:| :---------------:| :---------------:  |
 | PixelNeRF | 24.15   |0.903 | 0.122 | |
 | [IBRNet](https://github.com/generalizable-neural-performer/genebody-benchmarks/tree/ibrnet)| 23.61    |0.836 |  0.177 | [ckpts](https://hkustconnect-my.sharepoint.com/personal/wchengad_connect_ust_hk/_layouts/15/onedrive.aspx?ga=1&id=%2Fpersonal%2Fwchengad%5Fconnect%5Fust%5Fhk%2FDocuments%2Fgenebody%2Dbenchmark%2Dpretrained%2Fibrnet)|
+
+### Opensource contributions
+OpenXRLab/xrnerf: [https://github.com/openxrlab/xrnerf](https://github.com/openxrlab/xrnerf)
+
 
 ## Citation
 
