@@ -37,7 +37,7 @@ Setup the environment
 ```
 conda env create -f environment.yml
 conda activate gnr
-cd lib/mesh_grid && python setup.py install
+pip install git+https://github.com/generalizable-neural-performer/gnr.git@mesh_grid
 ```
 
 To run GNR on genebody
