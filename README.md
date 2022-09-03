@@ -1,6 +1,6 @@
 # mesh_grid
 
-`mesh_grid` is an accelerated library converts discrete triangular mesh to piece-wise smooth signed distance function (SDF).
+`mesh_grid` is an accelerated library converts discrete triangular mesh to piece-wise smooth signed distance function (SDF). More details of this is library is described in the technical paper [gnr](http://arxiv.org/abs/2204.11798).
 
 ## Requirement
 `mesh_grid` has been tested its compatiblity on pytorch==[1.1.0-1.9.0].
@@ -12,6 +12,7 @@ pip install git+https://github.com/generalizable-neural-performer/gnr.git@mesh_g
 ```
 
 ## Usage
+After installation, you can use this libray convert your mesh to a continous signed distance field on GPU very quick.
 ```python
 from mesh_grid_searcher import MeshGridSearcher
 import trimesh
