@@ -1,6 +1,5 @@
 import torch
-from my_mesh_grid import insert_grid_surface, cumsum, search_nearest_point, search_inside_mesh, search_intersect
-import trimesh
+from my_mesh_grid import insert_grid_surface, search_nearest_point, search_inside_mesh, search_intersect
 
 class MeshGridSearcher:
     def __init__(self, verts=None, faces=None):
@@ -8,6 +7,13 @@ class MeshGridSearcher:
             self.set_mesh(verts, faces)
 
     def set_mesh(self, verts, faces):
+        """
+        Preprocess the mesh by devide the mesh into local voxels, 
+        and save the face indices in each voxel for faster searching
+        Args:
+            verts: [N, 3] vertices
+            faces: [N, 3] faces
+        """
         self.verts = verts
         self.faces = faces
         _min, _ = torch.min(verts, 0)
@@ -27,8 +33,17 @@ class MeshGridSearcher:
                             self.tri_num)
     
     def nearest_points(self, points):
+        """
+        Find the nearest points on the mesh given query points
+        Args:
+            points: [N, 3] query point
+        Output:
+            nearest_pts: [N, 3] nearest point
+            nearest_faces: [N, ] nearest face index
+        """
         points = points.to(self.verts.device)
         nearest_faces = torch.zeros(points.shape[-2], dtype=torch.int32).to(self.verts.device)
+        # coeff is the barycentric coordinate of a triangluar face
         coeff = torch.zeros(points.shape, dtype=torch.float32).to(self.verts.device)
         nearest_pts = torch.zeros_like(coeff)
         search_nearest_point(points, self.verts, self.faces, self.tri_num,
@@ -37,6 +52,13 @@ class MeshGridSearcher:
         return nearest_pts, nearest_faces
 
     def inside_mesh(self, points):
+        """
+        Determines whether a point is inside the water tight mesh
+        Args:
+            points: [N, 3] query points
+        Output: 
+            inside: [N, ] inside or not
+        """
         points = points.to(self.verts.device)
         inside = torch.zeros(points.shape[-2], dtype=torch.float32).to(self.verts.device)
         search_inside_mesh(points, self.verts, self.faces, self.tri_num,
@@ -44,9 +66,32 @@ class MeshGridSearcher:
         return inside
 
     def intersects_any(self, origins, directions):
+        """
+        Determines whether a ray from origin points intersects with the mesh or not
+        Args:
+            origins: [N, 3] origin points
+            directions: [N, 3] ray directions
+        Output:
+            intersect: [N, ] number of intersections
+        """
         origins = origins.to(self.verts.device)
         directions = directions.to(self.verts.device)
         intersect = torch.zeros(origins.shape[-2], dtype=torch.bool).to(self.verts.device)
         search_intersect(origins, directions, self.verts, self.faces, self.tri_num,
                         self.tri_idx, self.num, self.minmax, self.step, intersect)
         return intersect
+
+    def signed_distance_function(self, points):
+        """
+        Compute the signed distance function of query points
+
+        Args:
+            points: [N, 3] query points
+        Ouput:
+            sdf: [N, ] signed distance function of given points
+        """
+        nearest_pts, _ = self.nearest_points(points)
+        distances = torch.norm(points - nearest_pts, dim=-1)
+        signs = self.inside_mesh(points)
+        sdf = signs * distances
+        return sdf
