@@ -1,5 +1,5 @@
 import torch
-from mesh_grid import insert_grid_surface, cumsum, search_nearest_point, search_inside_mesh, search_intersect
+from my_mesh_grid import insert_grid_surface, cumsum, search_nearest_point, search_inside_mesh, search_intersect
 import trimesh
 
 class MeshGridSearcher:

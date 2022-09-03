@@ -5,12 +5,15 @@ from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 CUDA_FLAGS = []
 INSTALL_REQUIREMENTS = []
+PACKAGES = ['mesh_grid']
 
 ext_modules=[
-    CUDAExtension('mesh_grid', [
-        'mesh_grid.cpp',
-        'mesh_grid_kernel.cu',
-        ]),
+    CUDAExtension('my_mesh_grid', 
+    sources=[
+        'src/mesh_grid.cpp',
+        'src/mesh_grid_kernel.cu',
+        ],
+    include_dirs = ['src']),
     ]
 
 setup(
@@ -22,5 +25,5 @@ setup(
     url='https://github.com/generalizable-neural-performer/gnr/',
     ext_modules=ext_modules,
     cmdclass = {'build_ext': BuildExtension},
-    scripts=['mesh_grid_searcher.py']
+    packages = PACKAGES
 )
