@@ -10,7 +10,7 @@ from ..geometry import index, orthogonal, perspective
 import trimesh
 import imageio
 from tqdm import tqdm
-from lib.mesh_grid import MeshGridSearcher
+from mesh_grid import MeshGridSearcher
 from skimage import measure
 
 mse = lambda x, y : torch.mean((x - y) ** 2)
