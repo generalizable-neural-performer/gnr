@@ -21,5 +21,6 @@ setup(
     author_email='wchengad@connect.ust.hk',
     url='https://github.com/generalizable-neural-performer/gnr/',
     ext_modules=ext_modules,
-    cmdclass = {'build_ext': BuildExtension}
+    cmdclass = {'build_ext': BuildExtension},
+    scripts=['mesh_grid_searcher.py']
 )
