@@ -1,7 +1,5 @@
 #include <torch/torch.h>
-#ifndef AT_CHECK
-#define AT_CHECK TORCH_CHECK 
-#endif
+
 
 at::Tensor insert_grid_surface_cuda(
     at::Tensor verts, at::Tensor faces,
@@ -28,7 +26,7 @@ void search_intersect_cuda (
     at::Tensor num, at::Tensor minmax, float step, at::Tensor intersect
 );
 
-#define CHECK_CUDA(x) AT_CHECK(x.type().is_cuda(), #x " must be a CUDA tensor")
+#define CHECK_CUDA(x) TORCH_CHECK(x.type().is_cuda(), #x " must be a CUDA tensor")
 
 
 at::Tensor insert_grid_surface(

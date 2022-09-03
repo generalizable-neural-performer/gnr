@@ -319,6 +319,13 @@ __global__ void search_nearest_point_kenerel(
 						}
 					}
 					dist2 = search_nearest_proj<scalar_t>(patch, _coeff);
+					for(unsigned char d = 0; d < dim; ++d){
+						if(isnan(_coeff[d])){
+							for(unsigned char dd = 0; dd < dim; ++dd){
+								_coeff[dd] = 1./3.;
+							}
+						}
+					}
 // printf("%d: %f %f %f\n", (int)threadIdx.x, _coeff[0], _coeff[1], _coeff[2]);
 					if(dis2 < 0 || dist2 < dis2) {
 						if(coeff != NULL) {
