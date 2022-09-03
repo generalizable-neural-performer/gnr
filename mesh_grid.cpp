@@ -1,6 +1,5 @@
 #include <torch/torch.h>
 
-
 at::Tensor insert_grid_surface_cuda(
     at::Tensor verts, at::Tensor faces,
     at::Tensor minmax, at::Tensor num, float step,
